@@ -1,0 +1,19 @@
+{
+  "name": "@hermes/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "hermes": "./dist/index.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@hermes/sdk": "workspace:*",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,0 +1,26 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+.DS_Store
+coverage
+
+# Foundry (packages/contracts)
+out/
+cache/
+broadcast/
+.foundry/
+packages/contracts/lib/
+packages/contracts/cache/
+packages/contracts/out/
+packages/contracts/broadcast/
+
+# pnpm / TS build artifacts
+.turbo/
+*.tsbuildinfo
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
