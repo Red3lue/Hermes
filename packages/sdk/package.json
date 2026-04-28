@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@0glabs/0g-ts-sdk": "latest",
+    "@ensdomains/ensjs": "^4.2.2",
     "@wagmi/core": "^3.4.6",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",

@@ -1,19 +1,13 @@
-import { normalize, getEnsText, GetEnsTextReturnType } from "viem/ens";
-import { client } from "./config/config";
-import { PublicClient, WalletClient } from "viem";
-
-export async function resolveEnsRecord(
-  name: string,
-  key: string,
-): Promise<GetEnsTextReturnType> {
-  const normalizedName = normalize(name);
-  const publicKey = await getEnsText(client, {
-    name: normalizedName,
-    key: key,
-  });
-  console.log(`Public key for ${name}: ${publicKey}`);
-  return publicKey;
-}
+import {
+  normalize,
+  getEnsText,
+  getEnsAddress,
+  getEnsResolver,
+  type GetEnsTextReturnType,
+} from "viem/ens";
+import { type PublicClient } from "viem";
+import { setRecords } from "@ensdomains/ensjs/wallet";
+import { client as defaultClient } from "./config/config";
 
 export type AgentRecords = {
   addr: `0x${string}`;
@@ -21,8 +15,14 @@ export type AgentRecords = {
   inbox: string;
 };
 
-function isHexAddress(value: string): value is `0x${string}` {
-  return /^0x[a-fA-F0-9]+$/.test(value);
+export async function resolveEnsRecord(
+  name: string,
+  key: string,
+): Promise<GetEnsTextReturnType> {
+  const normalizedName = normalize(name);
+  const value = await getEnsText(defaultClient, { name: normalizedName, key });
+  console.log(`ENS record ${key} for ${name}: ${value}`);
+  return value;
 }
 
 export async function resolveAgent(
@@ -31,21 +31,38 @@ export async function resolveAgent(
 ): Promise<AgentRecords> {
   const normalizedName = normalize(name);
   const [addr, pubkey, inbox] = await Promise.all([
-    getEnsText(client, { name: normalizedName, key: "addr" }),
+    getEnsAddress(client, { name: normalizedName }),
     getEnsText(client, { name: normalizedName, key: "hermes.pubkey" }),
     getEnsText(client, { name: normalizedName, key: "hermes.inbox" }),
   ]);
   if (!addr || !pubkey || !inbox) {
     throw new Error(`Missing ENS records for ${name}`);
   }
-  if (!isHexAddress(addr)) {
-    throw new Error(`Invalid ENS addr record for ${name}`);
-  }
   return { addr, pubkey, inbox };
 }
 
+// wallet must be created with addEnsContracts(chain) as its chain
 export async function setAgentRecords(
   name: string,
   records: AgentRecords,
-  wallet: WalletClient,
-): Promise<void> {}
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  const normalizedName = normalize(name);
+  const resolverAddress = await getEnsResolver(publicClient, {
+    name: normalizedName,
+  });
+  if (!resolverAddress) {
+    throw new Error(`No resolver found for ENS name ${name}`);
+  }
+
+  return setRecords(wallet, {
+    name: normalizedName,
+    resolverAddress,
+    account: wallet.account,
+    texts: [
+      { key: "hermes.pubkey", value: records.pubkey },
+      { key: "hermes.inbox", value: records.inbox },
+    ],
+  });
+}
