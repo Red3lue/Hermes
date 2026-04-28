@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   generateKeyPair,
+  generateKeyPairFromSignature,
   encryptMessage,
   decryptMessage,
   signEIP191,
@@ -53,6 +54,27 @@ describe("encryptMessage / decryptMessage", () => {
     expect(result).toBe(plaintext);
   });
 
+  it("round-trips plaintext from public key", () => {
+    const sender = generateKeyPair();
+    const recipient = generateKeyPair();
+    const plaintext = "hello hermes";
+
+    const { ciphertext, nonce } = encryptMessage(
+      plaintext,
+      recipient.publicKey,
+      sender.secretKey,
+    );
+
+    const result = decryptMessage(
+      ciphertext,
+      nonce,
+      sender.publicKey,
+      recipient.secretKey,
+    );
+
+    expect(result).toBe(plaintext);
+  });
+
   it("throws on tampered ciphertext", () => {
     const sender = generateKeyPair();
     const recipient = generateKeyPair();
@@ -74,6 +96,34 @@ describe("encryptMessage / decryptMessage", () => {
         recipient.secretKey,
       ),
     ).toThrow("Decryption failed");
+  });
+});
+
+describe("generateKeyPairFromSignature", () => {
+  it("produces a valid 32-byte keypair", async () => {
+    const kp = await generateKeyPairFromSignature(wallet);
+    expect(Buffer.from(kp.publicKey, "base64").length).toBe(32);
+    expect(Buffer.from(kp.secretKey, "base64").length).toBe(32);
+  });
+
+  it("is deterministic — same wallet produces same keypair", async () => {
+    const kp1 = await generateKeyPairFromSignature(wallet);
+    const kp2 = await generateKeyPairFromSignature(wallet);
+    expect(kp1.publicKey).toBe(kp2.publicKey);
+    expect(kp1.secretKey).toBe(kp2.secretKey);
+  });
+
+  it("different wallet produces different keypair", async () => {
+    const other = createWalletClient({
+      account: privateKeyToAccount(
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+      ),
+      chain: sepolia,
+      transport: http(),
+    });
+    const kp1 = await generateKeyPairFromSignature(wallet);
+    const kp2 = await generateKeyPairFromSignature(other);
+    expect(kp1.publicKey).not.toBe(kp2.publicKey);
   });
 });
 

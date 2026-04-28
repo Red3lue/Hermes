@@ -1,6 +1,6 @@
 # Hermes — Build Plan
 
-**Today:** Sun Apr 27, 2026
+**Today:** Tue Apr 29, 2026
 **Target ship date:** Fri May 1 – Sat May 2
 **Submission deadline:** Tue May 6
 **Budget:** ~18h core + 4h video/polish, solo
@@ -15,13 +15,13 @@ Scope cuts in this order if time slips: **stretch examples → CCIP-Read → gro
 
 **Goal:** Eliminate the only existential risk. Prove the substrate works.
 
-- [ ] Read [0G Storage SDK docs](https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk) (30 min, no AI)
-- [ ] Get 0G testnet faucet topup; put key + RPC into `.env`
-- [ ] Write `scripts/spike-0g.ts` yourself: upload 1KB blob → log rootHash → download by root → assert equal (60–90 min)
-- [ ] If it works: take a screenshot, you're feasible
+- [x] Read [0G Storage SDK docs](https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk) (30 min, no AI)
+- [x] Get 0G testnet faucet topup; put key + RPC into `.env`
+- [x] Write `scripts/spike-0g.ts` yourself: upload 1KB blob → log rootHash → download by root → assert equal (60–90 min)
+- [x] If it works: take a screenshot, you're feasible
 - [ ] If it doesn't: debug for max 60 min, then fall back to IPFS (replan day 2)
-- [ ] Pick parent ENS domain you control on Sepolia (or buy one; <$5)
-- [ ] Verify ENS Sepolia resolver setup with one manual subname via the ENS app UI
+- [x] Pick parent ENS domain you control on Sepolia (or buy one; <$5)
+- [x] Verify ENS Sepolia resolver setup with one manual subname via the ENS app UI
 
 **End-of-day deliverable:** `spike-0g.ts` round-trips. Parent ENS domain identified.
 
@@ -33,12 +33,12 @@ Scope cuts in this order if time slips: **stretch examples → CCIP-Read → gro
 
 **Goal:** Read/write ENS records from code. Crypto primitives passing tests.
 
-- [ ] Read [ENS Subname + PublicResolver pages](https://docs.ens.domains/web/subdomains/) (20 min, no AI)
-- [ ] Write `packages/sdk/src/ens.ts`: `resolveAgent(name)` returning `{addr, pubkey, inbox}`, `setAgentRecords(name, records)` using viem (60 min, your code)
-- [ ] Write `scripts/spike-ens.ts`: set 3 records on a subname, read them back (30 min)
-- [ ] Write `packages/sdk/src/crypto.ts`: tweetnacl sealed-box encrypt/decrypt + viem EIP-191 sign/verify (60 min, your code)
-- [ ] Write `packages/sdk/test/crypto.test.ts`: round-trip encrypt/decrypt, sign/verify, tampered envelope fails (30 min)
-- [ ] `pnpm test` green
+- [x] Read [ENS Subname + PublicResolver pages](https://docs.ens.domains/web/subdomains/) (20 min, no AI)
+- [x] Write `packages/sdk/src/ens.ts`: `resolveAgent(name)` returning `{addr, pubkey, inbox}`, `setAgentRecords(name, records)` using @ensdomains/ensjs (60 min, your code)
+- [x] Write `scripts/ens-test.ts`: set 3 records on a subname, read them back — tested on Sepolia ✓
+- [x] Write `packages/sdk/src/crypto.ts`: tweetnacl box encrypt/decrypt + viem EIP-191 sign/verify + deterministic keypair from wallet signature (60 min, your code)
+- [x] Write `packages/sdk/test/crypto.test.ts`: round-trip encrypt/decrypt, sign/verify, tampered envelope fails, deterministic keygen (9 tests green)
+- [x] `pnpm test` green
 
 **End-of-day deliverable:** ENS read/write works on Sepolia. Crypto unit tests pass.
 

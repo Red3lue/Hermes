@@ -1,6 +1,6 @@
 import nacl from "tweetnacl";
 import * as util from "tweetnacl-util";
-import { Hex, WalletClient, verifyMessage } from "viem";
+import { Hex, WalletClient, verifyMessage, keccak256 } from "viem";
 
 export type KeyPair = {
   publicKey: string; // base64
@@ -8,7 +8,26 @@ export type KeyPair = {
 };
 export function generateKeyPair(): KeyPair {
   const kp = nacl.box.keyPair();
+  return {
+    publicKey: util.encodeBase64(kp.publicKey),
+    secretKey: util.encodeBase64(kp.secretKey),
+  };
+}
 
+// Fixed message so the same wallet always derives the same keypair.
+const KEYGEN_MESSAGE = "hermes-keygen-v1"; //TODO: recheck this value before launch
+
+export async function generateKeyPairFromSignature(
+  wallet: WalletClient,
+): Promise<KeyPair> {
+  const sig = await wallet.signMessage({
+    message: KEYGEN_MESSAGE,
+    account: wallet.account!,
+  });
+  // keccak256 of the 65-byte sig → 32-byte deterministic seed
+  const seed = keccak256(sig as `0x${string}`);
+  const seedBytes = Buffer.from(seed.slice(2), "hex");
+  const kp = nacl.box.keyPair.fromSecretKey(seedBytes);
   return {
     publicKey: util.encodeBase64(kp.publicKey),
     secretKey: util.encodeBase64(kp.secretKey),
