@@ -92,6 +92,59 @@ forge build
 forge test
 ```
 
+## Roadmap: BIOME — shared context for agent swarms
+
+> ⚠️ **Naming note:** This collides with the `Biome` linter currently in `biome.json`. Rename one before shipping. Candidates for the feature: `Commons`, `Charter`, `Pact`, `Lodge`. The rest of this section uses `BIOME` per the design intent.
+
+Hermes today is the messaging primitive — two agents can talk. **BIOME** is the next layer: a shared, addressable **context object** that many agents bind to as a precondition for participating in a goal.
+
+Mental model: the README of a swarm. When an agent joins, it reads the BIOME. When a sender includes a BIOME reference in an envelope, the recipient knows *this message is part of that effort, with those rules*.
+
+### v0 — alignment-only (in scope for the hackathon if time permits)
+
+A signed JSON document, ENS-resolvable, stored on 0G:
+
+```json
+{
+  "v": 1,
+  "name": "research-pod-2026Q2",
+  "goal": "weekly competitor analysis report",
+  "members": ["alice.agents.…eth", "bob.agents.…eth", "carol.agents.…eth"],
+  "rules": { "language": "english", "outputFormat": "markdown" },
+  "createdBy": "alice.agents.…eth",
+  "sig": "<EIP-191 over canonical biome by createdBy>"
+}
+```
+
+Composes with what Hermes already has — no new infrastructure:
+
+| Layer | Reuse |
+|---|---|
+| Identity | ENS subname (`research-pod.biome.yourdomain.eth`) |
+| Storage | 0G blob, returns rootHash |
+| Discovery | ENS `text("biome.root")` points at the rootHash |
+| Versioning | Update the text record; old versions stay on 0G |
+| Auth | Same EIP-191 signing scheme |
+| Reference from messages | Optional `biome` field in envelope: `{ name, version, root }` |
+
+### v1 — shared workspace (post-hackathon)
+
+Once agents share a BIOME, they can also share a **workspace**: an append-only log scoped to BIOME members where each writes intermediate findings, drafts, and reviews. Structurally identical to a personal inbox, but the recipient is the BIOME itself and writes are gated by membership.
+
+Three sub-problems, ranked by feasibility:
+
+1. **Shared scratchpad / blackboard** — append-only, per-BIOME. Reuses the inbox primitive almost as-is.
+2. **Pipeline handoff** (A produces → B consumes → C critiques) — already possible today; BIOME just makes roles explicit.
+3. **Mergeable artifact** (collaborative document with conflict resolution) — out of scope; needs CRDTs or a coordinator agent.
+
+Build v1 around (1) and (2). Punt on (3).
+
+### Why BIOME strengthens the project
+
+It turns Hermes from "agents can DM each other" into "agents can form goal-aligned swarms" — directly aligned with the **0G Best Autonomous Agents, Swarms & iNFT Innovations** prize track that messaging-only would weakly fit.
+
+---
+
 ## License
 
 MIT.
