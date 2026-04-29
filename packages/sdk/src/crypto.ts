@@ -1,6 +1,8 @@
 import nacl from "tweetnacl";
-import * as util from "tweetnacl-util";
+import naclUtil from "tweetnacl-util";
 import { Hex, WalletClient, verifyMessage, keccak256 } from "viem";
+
+const { encodeBase64, decodeBase64, decodeUTF8, encodeUTF8 } = naclUtil;
 
 export type KeyPair = {
   publicKey: string; // base64
@@ -9,19 +11,22 @@ export type KeyPair = {
 export function generateKeyPair(): KeyPair {
   const kp = nacl.box.keyPair();
   return {
-    publicKey: util.encodeBase64(kp.publicKey),
-    secretKey: util.encodeBase64(kp.secretKey),
+    publicKey: encodeBase64(kp.publicKey),
+    secretKey: encodeBase64(kp.secretKey),
   };
 }
 
-// Fixed message so the same wallet always derives the same keypair.
-const KEYGEN_MESSAGE = "hermes-keygen-v1"; //TODO: recheck this value before launch
+// Versioned message → bump version to rotate keys without changing wallet.
+export function keygenMessage(version: number = 1): string {
+  return `hermes-keygen-v${version}`;
+}
 
 export async function generateKeyPairFromSignature(
   wallet: WalletClient,
+  version: number = 1,
 ): Promise<KeyPair> {
   const sig = await wallet.signMessage({
-    message: KEYGEN_MESSAGE,
+    message: keygenMessage(version),
     account: wallet.account!,
   });
   // keccak256 of the 65-byte sig → 32-byte deterministic seed
@@ -29,8 +34,8 @@ export async function generateKeyPairFromSignature(
   const seedBytes = Buffer.from(seed.slice(2), "hex");
   const kp = nacl.box.keyPair.fromSecretKey(seedBytes);
   return {
-    publicKey: util.encodeBase64(kp.publicKey),
-    secretKey: util.encodeBase64(kp.secretKey),
+    publicKey: encodeBase64(kp.publicKey),
+    secretKey: encodeBase64(kp.secretKey),
   };
 }
 /**
@@ -43,9 +48,9 @@ export function encryptMessage(
 ) {
   const nonce = nacl.randomBytes(nacl.box.nonceLength);
 
-  const recipientPublicKey = util.decodeBase64(recipientPublicKeyBase64);
-  const senderSecretKey = util.decodeBase64(senderSecretKeyBase64);
-  const messageBytes = util.decodeUTF8(message);
+  const recipientPublicKey = decodeBase64(recipientPublicKeyBase64);
+  const senderSecretKey = decodeBase64(senderSecretKeyBase64);
+  const messageBytes = decodeUTF8(message);
 
   const encrypted = nacl.box(
     messageBytes,
@@ -55,8 +60,8 @@ export function encryptMessage(
   );
 
   return {
-    nonce: util.encodeBase64(nonce),
-    ciphertext: util.encodeBase64(encrypted),
+    nonce: encodeBase64(nonce),
+    ciphertext: encodeBase64(encrypted),
   };
 }
 
@@ -69,10 +74,10 @@ export function decryptMessage(
   senderPublicKeyBase64: string,
   recipientSecretKeyBase64: string,
 ): string {
-  const ciphertext = util.decodeBase64(ciphertextBase64);
-  const nonce = util.decodeBase64(nonceBase64);
-  const senderPublicKey = util.decodeBase64(senderPublicKeyBase64);
-  const recipientSecretKey = util.decodeBase64(recipientSecretKeyBase64);
+  const ciphertext = decodeBase64(ciphertextBase64);
+  const nonce = decodeBase64(nonceBase64);
+  const senderPublicKey = decodeBase64(senderPublicKeyBase64);
+  const recipientSecretKey = decodeBase64(recipientSecretKeyBase64);
 
   const decrypted = nacl.box.open(
     ciphertext,
@@ -85,7 +90,7 @@ export function decryptMessage(
     throw new Error("Decryption failed");
   }
 
-  return util.encodeUTF8(decrypted);
+  return encodeUTF8(decrypted);
 }
 
 /**

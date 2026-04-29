@@ -56,13 +56,18 @@ export async function setAgentRecords(
     throw new Error(`No resolver found for ENS name ${name}`);
   }
 
-  return setRecords(wallet, {
+  const hash = await setRecords(wallet, {
     name: normalizedName,
     resolverAddress,
     account: wallet.account,
+    coins: [{ coin: "ETH", value: records.addr }],
     texts: [
       { key: "hermes.pubkey", value: records.pubkey },
       { key: "hermes.inbox", value: records.inbox },
     ],
   });
+
+  // wait for inclusion so subsequent resolveAgent() reads see the new state
+  await publicClient.waitForTransactionReceipt({ hash });
+  return hash;
 }
