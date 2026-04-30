@@ -1,16 +1,31 @@
+export const ENVELOPE_VERSION = 2 as const;
+
 export type Envelope = {
-  v: 1; // bump on breaking changes
+  v: 2; // bump on breaking changes
   from: string; // sender ENS
-  to: string; // recipient ENS
+  to: string; // recipient ENS or biome name
   ts: number; // unix seconds
   nonce: string; // base64, from encryptMessage
   ciphertext: string; // base64
-  ephemeralPubKey: string; // base64, sender's per-message X25519 pubkey
+  ephemeralPubKey: string; // base64, sender's per-message X25519 pubkey (omitted for biome msgs)
   replyTo?: `0x${string}`; // 0G rootHash of parent msg, if this is a reply
+  // v2 additions
+  biome?: { name: string; version: number; root: `0x${string}` };
+  context?: `0x${string}`; // 0G rootHash → ContextManifest
+  history?: `0x${string}`; // 0G rootHash → HistoryManifest
+  thread?: string; // sub-thread within a biome
   sig: `0x${string}`; // EIP-191 over canonicalize(envelope minus sig)
 };
 
 export type UnsignedEnvelope = Omit<Envelope, "sig">;
+
+// v1 envelope shape, kept only for the read-side shim. Drop in v0.3.
+type EnvelopeV1 = Omit<
+  Envelope,
+  "v" | "biome" | "context" | "history" | "thread"
+> & {
+  v: 1;
+};
 
 // Sorted keys, no whitespace, drop undefined. Same input → same bytes.
 export function canonicalize(value: unknown): string {
@@ -38,8 +53,13 @@ export function serializeEnvelope(env: Envelope): Uint8Array {
 
 export function parseEnvelope(bytes: Uint8Array): Envelope {
   const obj = JSON.parse(new TextDecoder().decode(bytes));
-  if (obj.v !== 1) throw new Error(`Unsupported envelope version: ${obj.v}`);
-  return obj as Envelope;
+  if (obj.v === 2) return obj as Envelope;
+  if (obj.v === 1) return promoteV1(obj as EnvelopeV1);
+  throw new Error(`Unsupported envelope version: ${obj.v}`);
+}
+
+function promoteV1(env: EnvelopeV1): Envelope {
+  return { ...env, v: 2 };
 }
 
 // Bounded LRU of seen (from, nonce) pairs. In-memory only.

@@ -22,8 +22,8 @@ describe("canonicalize", () => {
   });
 
   it("produces same output regardless of insertion order", () => {
-    const a = canonicalize({ to: "alice", from: "bob", ts: 1, v: 1 });
-    const b = canonicalize({ v: 1, ts: 1, from: "bob", to: "alice" });
+    const a = canonicalize({ to: "alice", from: "bob", ts: 1, v: 2 });
+    const b = canonicalize({ v: 2, ts: 1, from: "bob", to: "alice" });
     expect(a).toBe(b);
   });
 
@@ -49,7 +49,7 @@ describe("canonicalize", () => {
 describe("envelopeSigningPayload", () => {
   it("is stable across reordered fields", () => {
     const env1: UnsignedEnvelope = {
-      v: 1,
+      v: 2,
       from: "alice.hermes.eth",
       to: "bob.hermes.eth",
       ts: 1714000000,
@@ -64,14 +64,14 @@ describe("envelopeSigningPayload", () => {
       ts: 1714000000,
       to: "bob.hermes.eth",
       from: "alice.hermes.eth",
-      v: 1,
+      v: 2,
     };
     expect(envelopeSigningPayload(env1)).toBe(envelopeSigningPayload(env2));
   });
 
   it("changes when any field changes", () => {
     const base: UnsignedEnvelope = {
-      v: 1,
+      v: 2,
       from: "alice.hermes.eth",
       to: "bob.hermes.eth",
       ts: 1714000000,
@@ -87,7 +87,7 @@ describe("envelopeSigningPayload", () => {
 
   it("includes optional replyTo when present", () => {
     const base: UnsignedEnvelope = {
-      v: 1,
+      v: 2,
       from: "a.eth",
       to: "b.eth",
       ts: 1,
@@ -108,7 +108,7 @@ describe("envelopeSigningPayload", () => {
 describe("serialize / parse", () => {
   it("round-trips a complete envelope", () => {
     const env: Envelope = {
-      v: 1,
+      v: 2,
       from: "alice.hermes.eth",
       to: "bob.hermes.eth",
       ts: 1714000000,
@@ -120,6 +120,26 @@ describe("serialize / parse", () => {
     const bytes = serializeEnvelope(env);
     const parsed = parseEnvelope(bytes);
     expect(parsed).toEqual(env);
+  });
+
+  it("promotes v1 envelopes to v2 on read", () => {
+    const v1 = {
+      v: 1,
+      from: "alice.hermes.eth",
+      to: "bob.hermes.eth",
+      ts: 1714000000,
+      nonce: "n",
+      ciphertext: "c",
+      ephemeralPubKey: "e",
+      sig: "0xdeadbeef",
+    };
+    const bytes = new TextEncoder().encode(JSON.stringify(v1));
+    const parsed = parseEnvelope(bytes);
+    expect(parsed.v).toBe(2);
+    expect(parsed.from).toBe(v1.from);
+    expect(parsed.biome).toBeUndefined();
+    expect(parsed.context).toBeUndefined();
+    expect(parsed.history).toBeUndefined();
   });
 
   it("rejects unknown versions", () => {

@@ -116,7 +116,7 @@ export class Hermes {
     );
 
     const unsigned: UnsignedEnvelope = {
-      v: 1,
+      v: 2,
       from: this.cfg.ensName,
       to: toName,
       ts: Math.floor(Date.now() / 1000),

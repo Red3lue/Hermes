@@ -1,0 +1,10 @@
+{
+  "name": "@hermes/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'placeholder — Vite wired in Chunk 5' && exit 0",
+    "build": "echo 'placeholder — Vite wired in Chunk 5' && exit 0"
+  }
+}
