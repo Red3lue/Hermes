@@ -1,0 +1,21 @@
+{
+  "name": "@hermes/example-agents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:buyer": "tsx buyer.ts",
+    "start:seller": "tsx seller.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@ensdomains/ensjs": "^4.2.2",
+    "@hermes/sdk": "workspace:*",
+    "dotenv": "^16.4.5",
+    "viem": "^2.48.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
