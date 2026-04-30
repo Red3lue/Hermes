@@ -10,11 +10,16 @@ import {
   verifyEIP191,
   type KeyPair,
 } from "./crypto";
-import { canonicalize } from "./envelope";
-import { resolveBiomeRecords, setBiomeRecords } from "./ens";
+import {
+  canonicalize,
+  envelopeSigningPayload,
+  type Envelope,
+  type UnsignedEnvelope,
+} from "./envelope";
+import { resolveAgent, resolveBiomeRecords, setBiomeRecords } from "./ens";
 import { ZeroGStorage } from "./storage";
 
-const { encodeBase64, decodeBase64 } = naclUtil;
+const { encodeBase64, decodeBase64, decodeUTF8, encodeUTF8 } = naclUtil;
 
 export type BiomeMember = {
   ens: string;
@@ -275,4 +280,99 @@ export async function removeMember(
     ctx.wallet,
   );
   return { root, version: newDoc.version, K: Knew, doc: newDoc };
+}
+
+// --- biome message helpers (envelope v2) ----------------------------------
+
+export function encryptBiomePayload(
+  payload: string,
+  K: Uint8Array,
+): { ciphertext: string; nonce: string } {
+  const nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
+  const ct = nacl.secretbox(decodeUTF8(payload), nonce, K);
+  return { ciphertext: encodeBase64(ct), nonce: encodeBase64(nonce) };
+}
+
+export function decryptBiomePayload(
+  ciphertext: string,
+  nonce: string,
+  K: Uint8Array,
+): string {
+  const pt = nacl.secretbox.open(
+    decodeBase64(ciphertext),
+    decodeBase64(nonce),
+    K,
+  );
+  if (!pt) throw new Error("biome decryption failed");
+  return encodeUTF8(pt);
+}
+
+export type BuildBiomeEnvelopeArgs = {
+  fromEns: string;
+  biomeName: string;
+  biomeVersion: number;
+  biomeRoot: `0x${string}`;
+  payload: string;
+  K: Uint8Array;
+  thread?: string;
+  context?: `0x${string}`;
+  history?: `0x${string}`;
+};
+
+export async function buildBiomeEnvelope(
+  args: BuildBiomeEnvelopeArgs,
+  wallet: WalletClient & { account: Account },
+): Promise<Envelope> {
+  const { ciphertext, nonce } = encryptBiomePayload(args.payload, args.K);
+  const unsigned: UnsignedEnvelope = {
+    v: 2,
+    from: args.fromEns,
+    to: args.biomeName,
+    ts: Math.floor(Date.now() / 1000),
+    nonce,
+    ciphertext,
+    biome: {
+      name: args.biomeName,
+      version: args.biomeVersion,
+      root: args.biomeRoot,
+    },
+    thread: args.thread,
+    context: args.context,
+    history: args.history,
+  };
+  const sig = await signEIP191(wallet, envelopeSigningPayload(unsigned));
+  return { ...unsigned, sig };
+}
+
+export type DecryptedBiomeEnvelope = {
+  text: string;
+  envelope: Envelope;
+};
+
+export async function decryptBiomeEnvelope(
+  env: Envelope,
+  K: Uint8Array,
+  doc: BiomeDoc,
+  publicClient: PublicClient,
+): Promise<DecryptedBiomeEnvelope> {
+  if (!env.biome) throw new Error("envelope is not biome-scoped");
+  if (env.biome.name !== doc.name) {
+    throw new Error(
+      `envelope biome ${env.biome.name} does not match cached ${doc.name}`,
+    );
+  }
+  const member = doc.members.find((m) => m.ens === env.from);
+  if (!member) throw new Error(`sender ${env.from} is not a member of ${doc.name}`);
+
+  const sender = await resolveAgent(env.from, publicClient);
+  const { sig, ...unsigned } = env;
+  const sigOk = await verifyEIP191(
+    sender.addr,
+    envelopeSigningPayload(unsigned),
+    sig,
+  );
+  if (!sigOk) throw new Error("bad signature");
+
+  const text = decryptBiomePayload(env.ciphertext, env.nonce, K);
+  return { text, envelope: env };
 }

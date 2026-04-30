@@ -41,7 +41,13 @@ export {
   type Keystore,
   type BiomeKeyEntry,
 } from "./keystore";
-export { Hermes, type HermesConfig, type ReceivedMessage } from "./client";
+export {
+  Hermes,
+  type HermesConfig,
+  type ReceivedMessage,
+  type BiomeReceivedMessage,
+  type SendToBiomeOptions,
+} from "./client";
 export {
   createBiome,
   joinBiome,

@@ -7,7 +7,7 @@ export type Envelope = {
   ts: number; // unix seconds
   nonce: string; // base64, from encryptMessage
   ciphertext: string; // base64
-  ephemeralPubKey: string; // base64, sender's per-message X25519 pubkey (omitted for biome msgs)
+  ephemeralPubKey?: string; // base64, sender's X25519 pubkey — set for 1:1, omitted for biome msgs
   replyTo?: `0x${string}`; // 0G rootHash of parent msg, if this is a reply
   // v2 additions
   biome?: { name: string; version: number; root: `0x${string}` };

@@ -34,6 +34,13 @@ import {
   tryLoadKeystore,
   type Keystore,
 } from "./keystore";
+import {
+  joinBiome,
+  buildBiomeEnvelope,
+  decryptBiomeEnvelope,
+  type BiomeContext,
+  type BiomeDoc,
+} from "./biome";
 
 export type HermesConfig = {
   ensName: string;
@@ -53,12 +60,36 @@ export type ReceivedMessage = {
   blockNumber: bigint;
 };
 
+export type BiomeReceivedMessage = {
+  from: string;
+  text: string;
+  ts: number;
+  rootHash: `0x${string}`;
+  blockNumber: bigint;
+  biomeVersion: number;
+  thread?: string;
+};
+
+type CachedBiome = {
+  K: Uint8Array;
+  doc: BiomeDoc;
+  version: number;
+  root: `0x${string}`;
+};
+
+export type SendToBiomeOptions = {
+  thread?: string;
+  context?: `0x${string}`;
+  history?: `0x${string}`;
+};
+
 export class Hermes {
   private cfg: HermesConfig;
   private storage: ZeroGStorage;
   private replay = new ReplayCache();
   private keys: KeyPair | null = null;
   private keyVersion = 1;
+  private biomeCache = new Map<string, CachedBiome>();
 
   constructor(cfg: HermesConfig) {
     this.cfg = cfg;
@@ -166,6 +197,91 @@ export class Hermes {
     return out;
   }
 
+  async sendToBiome(
+    biomeName: string,
+    text: string,
+    opts?: SendToBiomeOptions,
+  ): Promise<{ rootHash: `0x${string}`; tx: Hash }> {
+    if (!this.keys) throw new Error("call register() first or load a keystore");
+
+    const biome = await this.loadBiome(biomeName);
+    const envelope = await buildBiomeEnvelope(
+      {
+        fromEns: this.cfg.ensName,
+        biomeName,
+        biomeVersion: biome.version,
+        biomeRoot: biome.root,
+        payload: text,
+        K: biome.K,
+        thread: opts?.thread,
+        context: opts?.context,
+        history: opts?.history,
+      },
+      this.cfg.wallet,
+    );
+
+    const rootHash = await this.storage.uploadBlob(serializeEnvelope(envelope));
+    const tx = await appendToInbox(
+      {
+        contract: this.cfg.inboxContract,
+        publicClient: this.cfg.publicClient,
+        wallet: this.cfg.wallet,
+      },
+      biomeName,
+      rootHash,
+    );
+
+    return { rootHash, tx };
+  }
+
+  async fetchBiomeInbox(
+    biomeName: string,
+    fromBlock: bigint = 0n,
+  ): Promise<BiomeReceivedMessage[]> {
+    if (!this.keys) throw new Error("call register() first or load a keystore");
+
+    const biome = await this.loadBiome(biomeName);
+    const logs = await readInbox(
+      { contract: this.cfg.inboxContract, publicClient: this.cfg.publicClient },
+      biomeName,
+      fromBlock,
+    );
+
+    const out: BiomeReceivedMessage[] = [];
+    for (const log of logs) {
+      try {
+        const bytes = await this.storage.downloadBlob(log.rootHash);
+        const envelope = parseEnvelope(bytes);
+
+        if (envelope.to !== biomeName || !envelope.biome) continue;
+        if (this.replay.check(envelope.from, envelope.nonce)) continue;
+
+        const decoded = await decryptBiomeEnvelope(
+          envelope,
+          biome.K,
+          biome.doc,
+          this.cfg.publicClient,
+        );
+        const biomeMeta = decoded.envelope.biome;
+        if (!biomeMeta) continue;
+
+        out.push({
+          from: decoded.envelope.from,
+          text: decoded.text,
+          ts: decoded.envelope.ts,
+          rootHash: log.rootHash,
+          blockNumber: log.blockNumber,
+          biomeVersion: biomeMeta.version,
+          thread: decoded.envelope.thread,
+        });
+      } catch (err) {
+        console.warn(`drop biome msg ${log.rootHash}:`, (err as Error).message);
+      }
+    }
+
+    return out;
+  }
+
   /** Bump key version, re-derive, push new pubkey to ENS. */
   async rotateKeys(): Promise<KeyPair> {
     this.keyVersion += 1;
@@ -190,6 +306,9 @@ export class Hermes {
     const envelope = parseEnvelope(bytes);
 
     if (envelope.to !== this.cfg.ensName) return null;
+    if (!envelope.ephemeralPubKey) {
+      throw new Error("not a direct message envelope");
+    }
     if (this.replay.check(envelope.from, envelope.nonce)) return null;
 
     const sender = await resolveAgent(envelope.from, this.cfg.publicClient);
@@ -217,6 +336,28 @@ export class Hermes {
       replyTo: log.replyTo,
       blockNumber: log.blockNumber,
     };
+  }
+
+  private async loadBiome(name: string): Promise<CachedBiome> {
+    const cached = this.biomeCache.get(name);
+    if (cached) return cached;
+
+    const ctx: BiomeContext = {
+      publicClient: this.cfg.publicClient,
+      wallet: this.cfg.wallet,
+      storage: this.storage,
+      myEns: this.cfg.ensName,
+      myKeys: this.keys!,
+    };
+    const joined = await joinBiome(ctx, name);
+    const hydrated: CachedBiome = {
+      K: joined.K,
+      doc: joined.doc,
+      version: joined.version,
+      root: joined.root,
+    };
+    this.biomeCache.set(name, hydrated);
+    return hydrated;
   }
 
   private persist(): void {
