@@ -14,6 +14,9 @@ export type Keystore = {
   keyVersion: number; // for rotation
   x25519: KeyPair; // cache; can always be re-derived from wallet + version
   biomes?: Record<string, BiomeKeyEntry>; // keyed by biome ENS name
+  // lastHistoryRoots key = `${peerOrBiome}|${thread ?? ""}` → 0G rootHash of the
+  // most recent history manifest the local agent uploaded for that thread.
+  lastHistoryRoots?: Record<string, `0x${string}`>;
 };
 
 export function loadKeystore(path: string): Keystore {
@@ -47,4 +50,26 @@ export function loadBiomeKey(
 ): BiomeKeyEntry | null {
   const ks = tryLoadKeystore(path);
   return ks?.biomes?.[biomeName] ?? null;
+}
+
+export function historyKey(peerOrBiome: string, thread?: string): string {
+  return `${peerOrBiome}|${thread ?? ""}`;
+}
+
+export function getLastHistoryRoot(
+  path: string,
+  key: string,
+): `0x${string}` | null {
+  const ks = tryLoadKeystore(path);
+  return ks?.lastHistoryRoots?.[key] ?? null;
+}
+
+export function setLastHistoryRoot(
+  path: string,
+  key: string,
+  root: `0x${string}`,
+): void {
+  const ks = loadKeystore(path);
+  ks.lastHistoryRoots = { ...(ks.lastHistoryRoots ?? {}), [key]: root };
+  saveKeystore(path, ks);
 }

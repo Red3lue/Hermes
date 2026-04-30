@@ -29,8 +29,11 @@ import {
 } from "./inbox";
 import { ZeroGStorage, type StorageConfig } from "./storage";
 import {
+  getLastHistoryRoot,
+  historyKey,
   loadKeystore,
   saveKeystore,
+  setLastHistoryRoot,
   tryLoadKeystore,
   type Keystore,
 } from "./keystore";
@@ -41,6 +44,7 @@ import {
   type BiomeContext,
   type BiomeDoc,
 } from "./biome";
+import { buildHistoryManifest, type ManifestEntry } from "./manifest";
 
 export type HermesConfig = {
   ensName: string;
@@ -80,7 +84,17 @@ type CachedBiome = {
 export type SendToBiomeOptions = {
   thread?: string;
   context?: `0x${string}`;
-  history?: `0x${string}`;
+  /**
+   * Override the auto-chained `history` rootHash. If omitted, the client
+   * pulls the last history root for this (biome, thread) from the keystore.
+   * Pass `null` to explicitly skip chaining for this send.
+   */
+  history?: `0x${string}` | null;
+  /**
+   * Default true: after upload, build a history manifest entry and update
+   * the keystore's lastHistoryRoot for this (biome, thread).
+   */
+  chainHistory?: boolean;
 };
 
 export class Hermes {
@@ -90,6 +104,7 @@ export class Hermes {
   private keys: KeyPair | null = null;
   private keyVersion = 1;
   private biomeCache = new Map<string, CachedBiome>();
+  private historyMem = new Map<string, `0x${string}`>();
 
   constructor(cfg: HermesConfig) {
     this.cfg = cfg;
@@ -106,6 +121,9 @@ export class Hermes {
         }
         this.keys = ks.x25519;
         this.keyVersion = ks.keyVersion;
+        for (const [k, v] of Object.entries(ks.lastHistoryRoots ?? {})) {
+          this.historyMem.set(k, v);
+        }
       }
     }
   }
@@ -201,10 +219,25 @@ export class Hermes {
     biomeName: string,
     text: string,
     opts?: SendToBiomeOptions,
-  ): Promise<{ rootHash: `0x${string}`; tx: Hash }> {
+  ): Promise<{
+    rootHash: `0x${string}`;
+    tx: Hash;
+    historyRoot?: `0x${string}`;
+  }> {
     if (!this.keys) throw new Error("call register() first or load a keystore");
 
     const biome = await this.loadBiome(biomeName);
+    const hKey = historyKey(biomeName, opts?.thread);
+    const chain = opts?.chainHistory !== false;
+    let priorHistory: `0x${string}` | undefined;
+    if (opts?.history === null) {
+      priorHistory = undefined;
+    } else if (opts?.history !== undefined) {
+      priorHistory = opts.history;
+    } else {
+      priorHistory = this.lookupHistoryRoot(hKey);
+    }
+
     const envelope = await buildBiomeEnvelope(
       {
         fromEns: this.cfg.ensName,
@@ -215,7 +248,7 @@ export class Hermes {
         K: biome.K,
         thread: opts?.thread,
         context: opts?.context,
-        history: opts?.history,
+        history: priorHistory,
       },
       this.cfg.wallet,
     );
@@ -231,7 +264,27 @@ export class Hermes {
       rootHash,
     );
 
-    return { rootHash, tx };
+    let historyRoot: `0x${string}` | undefined;
+    if (chain) {
+      const entry: ManifestEntry = {
+        ts: envelope.ts,
+        from: this.cfg.ensName,
+        rootHash,
+        thread: opts?.thread,
+      };
+      const built = await buildHistoryManifest({
+        entries: [entry],
+        prev: priorHistory,
+        createdBy: this.cfg.ensName,
+        wallet: this.cfg.wallet,
+        encrypt: { kind: "biome", K: biome.K },
+        storage: this.storage,
+      });
+      historyRoot = built.root;
+      this.recordHistoryRoot(hKey, historyRoot);
+    }
+
+    return { rootHash, tx, historyRoot };
   }
 
   async fetchBiomeInbox(
@@ -362,12 +415,29 @@ export class Hermes {
 
   private persist(): void {
     if (!this.cfg.keystorePath || !this.keys) return;
+    const existing = tryLoadKeystore(this.cfg.keystorePath);
     const ks: Keystore = {
       ensName: this.cfg.ensName,
       address: this.cfg.wallet.account.address,
       keyVersion: this.keyVersion,
       x25519: this.keys,
+      biomes: existing?.biomes,
+      lastHistoryRoots: existing?.lastHistoryRoots,
     };
     saveKeystore(this.cfg.keystorePath, ks);
+  }
+
+  private lookupHistoryRoot(key: string): `0x${string}` | undefined {
+    const mem = this.historyMem.get(key);
+    if (mem) return mem;
+    if (!this.cfg.keystorePath) return undefined;
+    return getLastHistoryRoot(this.cfg.keystorePath, key) ?? undefined;
+  }
+
+  private recordHistoryRoot(key: string, root: `0x${string}`): void {
+    this.historyMem.set(key, root);
+    if (this.cfg.keystorePath) {
+      setLastHistoryRoot(this.cfg.keystorePath, key, root);
+    }
   }
 }
