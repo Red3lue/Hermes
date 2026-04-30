@@ -41,6 +41,48 @@ export async function resolveAgent(
   return { addr, pubkey, inbox };
 }
 
+export async function resolveBiomeRecords(
+  name: string,
+  client: PublicClient,
+): Promise<{ root: `0x${string}`; version: number }> {
+  const normalizedName = normalize(name);
+  const [root, version] = await Promise.all([
+    getEnsText(client, { name: normalizedName, key: "biome.root" }),
+    getEnsText(client, { name: normalizedName, key: "biome.version" }),
+  ]);
+  if (!root || !version) {
+    throw new Error(`Missing biome ENS records for ${name}`);
+  }
+  return { root: root as `0x${string}`, version: Number(version) };
+}
+
+export async function setBiomeRecords(
+  name: string,
+  root: `0x${string}`,
+  version: number,
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  const normalizedName = normalize(name);
+  const resolverAddress = await getEnsResolver(publicClient, {
+    name: normalizedName,
+  });
+  if (!resolverAddress) {
+    throw new Error(`No resolver found for ENS name ${name}`);
+  }
+  const hash = await setRecords(wallet, {
+    name: normalizedName,
+    resolverAddress,
+    account: wallet.account,
+    texts: [
+      { key: "biome.root", value: root },
+      { key: "biome.version", value: String(version) },
+    ],
+  });
+  await publicClient.waitForTransactionReceipt({ hash });
+  return hash;
+}
+
 // wallet must be created with addEnsContracts(chain) as its chain
 export async function setAgentRecords(
   name: string,

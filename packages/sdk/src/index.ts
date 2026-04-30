@@ -36,6 +36,29 @@ export {
   loadKeystore,
   saveKeystore,
   tryLoadKeystore,
+  saveBiomeKey,
+  loadBiomeKey,
   type Keystore,
+  type BiomeKeyEntry,
 } from "./keystore";
 export { Hermes, type HermesConfig, type ReceivedMessage } from "./client";
+export {
+  createBiome,
+  joinBiome,
+  addMember,
+  removeMember,
+  wrapKey,
+  unwrapKey,
+  buildUnsignedBiomeDoc,
+  biomeSigningPayload,
+  verifyBiomeDoc,
+  type BiomeDoc,
+  type UnsignedBiomeDoc,
+  type BiomeMember,
+  type BiomeWrap,
+  type BiomeContext,
+  type CreateBiomeArgs,
+  type CreateBiomeResult,
+  type JoinBiomeResult,
+} from "./biome";
+export { resolveBiomeRecords, setBiomeRecords } from "./ens";
