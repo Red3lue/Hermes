@@ -1,6 +1,12 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { KeyPair } from "./crypto";
+import {
+  defaultPolicy,
+  mergePolicy,
+  type AgentPolicy,
+  type AgentPolicyPatch,
+} from "./policy";
 
 export type BiomeKeyEntry = {
   version: number;
@@ -17,6 +23,11 @@ export type Keystore = {
   // lastHistoryRoots key = `${peerOrBiome}|${thread ?? ""}` → 0G rootHash of the
   // most recent history manifest the local agent uploaded for that thread.
   lastHistoryRoots?: Record<string, `0x${string}`>;
+  policy?: AgentPolicy;
+  // ENS names we've received a 1:1 message from. Used to gate
+  // `public.canStartConversations` — a reply to anyone in this set is allowed
+  // regardless of the flag.
+  inboundPeers?: string[];
 };
 
 export function loadKeystore(path: string): Keystore {
@@ -72,4 +83,34 @@ export function setLastHistoryRoot(
   const ks = loadKeystore(path);
   ks.lastHistoryRoots = { ...(ks.lastHistoryRoots ?? {}), [key]: root };
   saveKeystore(path, ks);
+}
+
+export function loadPolicy(path: string): AgentPolicy {
+  const ks = tryLoadKeystore(path);
+  return ks?.policy ?? defaultPolicy();
+}
+
+export function savePolicy(
+  path: string,
+  patch: AgentPolicyPatch,
+): AgentPolicy {
+  const ks = loadKeystore(path);
+  const merged = mergePolicy(ks.policy ?? defaultPolicy(), patch);
+  ks.policy = merged;
+  saveKeystore(path, ks);
+  return merged;
+}
+
+export function recordInboundPeer(path: string, peer: string): void {
+  const ks = loadKeystore(path);
+  const set = new Set(ks.inboundPeers ?? []);
+  if (set.has(peer)) return;
+  set.add(peer);
+  ks.inboundPeers = [...set];
+  saveKeystore(path, ks);
+}
+
+export function hasInboundFromPeer(path: string, peer: string): boolean {
+  const ks = tryLoadKeystore(path);
+  return (ks?.inboundPeers ?? []).includes(peer);
 }

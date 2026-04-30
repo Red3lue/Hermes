@@ -38,6 +38,17 @@ import {
   type Keystore,
 } from "./keystore";
 import {
+  defaultPolicy,
+  mergePolicy,
+  assertSendAllowed,
+  assertReceiveAllowed,
+  assertBridgeAllowed,
+  PolicyDeniedError,
+  type AgentPolicy,
+  type AgentPolicyPatch,
+  type BridgeChannel,
+} from "./policy";
+import {
   joinBiome,
   buildBiomeEnvelope,
   decryptBiomeEnvelope,
@@ -46,6 +57,13 @@ import {
 } from "./biome";
 import { buildHistoryManifest, type ManifestEntry } from "./manifest";
 
+export type PolicyDropInfo = {
+  err: PolicyDeniedError;
+  channel: { kind: "public" } | { kind: "biome"; name: string };
+  rootHash?: `0x${string}`;
+  from?: string;
+};
+
 export type HermesConfig = {
   ensName: string;
   inboxContract: `0x${string}`;
@@ -53,9 +71,12 @@ export type HermesConfig = {
   wallet: WalletClient & { account: Account }; // agent's own EOA
   storage: StorageConfig;
   keystorePath?: string; // optional cache; not load-bearing
+  /** Called when a received message is filtered out by policy. */
+  onPolicyDrop?: (info: PolicyDropInfo) => void;
 };
 
 export type ReceivedMessage = {
+  origin: "public";
   from: string;
   text: string;
   ts: number;
@@ -65,6 +86,8 @@ export type ReceivedMessage = {
 };
 
 export type BiomeReceivedMessage = {
+  origin: "biome";
+  biomeName: string;
   from: string;
   text: string;
   ts: number;
@@ -73,6 +96,21 @@ export type BiomeReceivedMessage = {
   biomeVersion: number;
   thread?: string;
 };
+
+export type BridgeArgs = {
+  from: BridgeChannel;
+  to: BridgeChannel;
+  message: string;
+};
+
+export type BridgeResult =
+  | { kind: "public"; rootHash: `0x${string}`; tx: Hash }
+  | {
+      kind: "biome";
+      rootHash: `0x${string}`;
+      tx: Hash;
+      historyRoot?: `0x${string}`;
+    };
 
 type CachedBiome = {
   K: Uint8Array;
@@ -105,6 +143,8 @@ export class Hermes {
   private keyVersion = 1;
   private biomeCache = new Map<string, CachedBiome>();
   private historyMem = new Map<string, `0x${string}`>();
+  private policyState: AgentPolicy = defaultPolicy();
+  private inboundPeersMem = new Set<string>();
 
   constructor(cfg: HermesConfig) {
     this.cfg = cfg;
@@ -124,8 +164,31 @@ export class Hermes {
         for (const [k, v] of Object.entries(ks.lastHistoryRoots ?? {})) {
           this.historyMem.set(k, v);
         }
+        if (ks.policy) this.policyState = ks.policy;
+        for (const peer of ks.inboundPeers ?? []) {
+          this.inboundPeersMem.add(peer);
+        }
       }
     }
+  }
+
+  /** Read-only snapshot of the current policy. */
+  get policy(): AgentPolicy {
+    return JSON.parse(JSON.stringify(this.policyState)) as AgentPolicy;
+  }
+
+  /** Merge `patch` into the current policy and persist (if a keystore is set). */
+  updatePolicy(patch: AgentPolicyPatch): AgentPolicy {
+    this.policyState = mergePolicy(this.policyState, patch);
+    this.persist();
+    return this.policy;
+  }
+
+  /** Test/seed hook: mark a peer as having sent us a message before. */
+  recordInboundPeer(peer: string): void {
+    if (this.inboundPeersMem.has(peer)) return;
+    this.inboundPeersMem.add(peer);
+    this.persist();
   }
 
   /** Derive keys from wallet sig + publish ENS records. Idempotent on keys. */
@@ -156,6 +219,11 @@ export class Hermes {
     replyTo?: `0x${string}`,
   ): Promise<{ rootHash: `0x${string}`; tx: Hash }> {
     if (!this.keys) throw new Error("call register() first or load a keystore");
+
+    assertSendAllowed(this.policyState, {
+      channel: { kind: "public", peer: toName },
+      hasPriorInbound: this.inboundPeersMem.has(toName),
+    });
 
     const recipient = await resolveAgent(toName, this.cfg.publicClient);
     const { ciphertext, nonce } = encryptMessage(
@@ -197,6 +265,16 @@ export class Hermes {
   async fetchInbox(fromBlock: bigint = 0n): Promise<ReceivedMessage[]> {
     if (!this.keys) throw new Error("call register() first or load a keystore");
 
+    try {
+      assertReceiveAllowed(this.policyState, { channel: { kind: "public" } });
+    } catch (err) {
+      if (err instanceof PolicyDeniedError) {
+        this.cfg.onPolicyDrop?.({ err, channel: { kind: "public" } });
+        return [];
+      }
+      throw err;
+    }
+
     const logs = await readInbox(
       { contract: this.cfg.inboxContract, publicClient: this.cfg.publicClient },
       this.cfg.ensName,
@@ -207,7 +285,13 @@ export class Hermes {
     for (const log of logs) {
       try {
         const decoded = await this.decodeLog(log);
-        if (decoded) out.push(decoded);
+        if (decoded) {
+          out.push(decoded);
+          if (!this.inboundPeersMem.has(decoded.from)) {
+            this.inboundPeersMem.add(decoded.from);
+            this.persist();
+          }
+        }
       } catch (err) {
         console.warn(`drop msg ${log.rootHash}:`, (err as Error).message);
       }
@@ -225,6 +309,10 @@ export class Hermes {
     historyRoot?: `0x${string}`;
   }> {
     if (!this.keys) throw new Error("call register() first or load a keystore");
+
+    assertSendAllowed(this.policyState, {
+      channel: { kind: "biome", name: biomeName },
+    });
 
     const biome = await this.loadBiome(biomeName);
     const hKey = historyKey(biomeName, opts?.thread);
@@ -293,6 +381,21 @@ export class Hermes {
   ): Promise<BiomeReceivedMessage[]> {
     if (!this.keys) throw new Error("call register() first or load a keystore");
 
+    try {
+      assertReceiveAllowed(this.policyState, {
+        channel: { kind: "biome", name: biomeName },
+      });
+    } catch (err) {
+      if (err instanceof PolicyDeniedError) {
+        this.cfg.onPolicyDrop?.({
+          err,
+          channel: { kind: "biome", name: biomeName },
+        });
+        return [];
+      }
+      throw err;
+    }
+
     const biome = await this.loadBiome(biomeName);
     const logs = await readInbox(
       { contract: this.cfg.inboxContract, publicClient: this.cfg.publicClient },
@@ -319,6 +422,8 @@ export class Hermes {
         if (!biomeMeta) continue;
 
         out.push({
+          origin: "biome",
+          biomeName,
           from: decoded.envelope.from,
           text: decoded.text,
           ts: decoded.envelope.ts,
@@ -333,6 +438,28 @@ export class Hermes {
     }
 
     return out;
+  }
+
+  /**
+   * The only sanctioned cross-channel relay. Verifies the directional
+   * permission for `(from.kind, to.kind)`, then re-encrypts via `send` /
+   * `sendToBiome`. Same `assertSendAllowed` gate applies on the destination
+   * leg, so a bridge cannot bypass send-side rules.
+   */
+  async bridge(args: BridgeArgs): Promise<BridgeResult> {
+    assertBridgeAllowed(this.policyState, { from: args.from, to: args.to });
+    if (args.to.kind === "public") {
+      if (!args.to.peer) {
+        throw new Error("bridge: public destination requires `to.peer`");
+      }
+      const { rootHash, tx } = await this.send(args.to.peer, args.message);
+      return { kind: "public", rootHash, tx };
+    }
+    const { rootHash, tx, historyRoot } = await this.sendToBiome(
+      args.to.name,
+      args.message,
+    );
+    return { kind: "biome", rootHash, tx, historyRoot };
   }
 
   /** Bump key version, re-derive, push new pubkey to ENS. */
@@ -382,6 +509,7 @@ export class Hermes {
     );
 
     return {
+      origin: "public",
       from: envelope.from,
       text,
       ts: envelope.ts,
@@ -423,6 +551,8 @@ export class Hermes {
       x25519: this.keys,
       biomes: existing?.biomes,
       lastHistoryRoots: existing?.lastHistoryRoots,
+      policy: this.policyState,
+      inboundPeers: [...this.inboundPeersMem],
     };
     saveKeystore(this.cfg.keystorePath, ks);
   }

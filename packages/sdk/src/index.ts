@@ -41,9 +41,32 @@ export {
   historyKey,
   getLastHistoryRoot,
   setLastHistoryRoot,
+  loadPolicy,
+  savePolicy,
+  recordInboundPeer,
+  hasInboundFromPeer,
   type Keystore,
   type BiomeKeyEntry,
 } from "./keystore";
+export {
+  defaultPolicy,
+  resolveBiomePolicy,
+  mergePolicy,
+  assertSendAllowed,
+  assertReceiveAllowed,
+  assertBridgeAllowed,
+  PolicyDeniedError,
+  type AgentPolicy,
+  type AgentPolicyPatch,
+  type BiomePolicy,
+  type PublicPolicy,
+  type PolicyChannel,
+  type PolicyDeniedReason,
+  type BridgeChannel,
+  type BridgeCheckCtx,
+  type SendCheckCtx,
+  type ReceiveCheckCtx,
+} from "./policy";
 export {
   buildContextManifest,
   buildHistoryManifest,
@@ -72,6 +95,9 @@ export {
   type ReceivedMessage,
   type BiomeReceivedMessage,
   type SendToBiomeOptions,
+  type BridgeArgs,
+  type BridgeResult,
+  type PolicyDropInfo,
 } from "./client";
 export {
   createBiome,
