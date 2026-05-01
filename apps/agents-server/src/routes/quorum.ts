@@ -101,7 +101,10 @@ async function runRound(biomeName: string) {
         maxTokens: 200,
       });
     } catch (err) {
-      console.error(`[quorum] LLM error for ${agent.slug}:`, (err as Error).message);
+      console.error(
+        `[quorum] LLM error for ${agent.slug}:`,
+        (err as Error).message,
+      );
       continue;
     }
 
@@ -123,7 +126,10 @@ async function runRound(biomeName: string) {
     pushEntry(biomeName, entry);
 
     if (verdictMatch) {
-      verdicts.push({ slug: agent.slug, verdict: verdictMatch[1].toLowerCase() });
+      verdicts.push({
+        slug: agent.slug,
+        verdict: verdictMatch[1].toLowerCase(),
+      });
     }
 
     // Small delay so SSE entries arrive with visible pacing
@@ -148,7 +154,7 @@ async function runRound(biomeName: string) {
     pushEntry(biomeName, {
       id: randomUUID(),
       slug: "tally",
-      ens: "tally.hermes-demo.eth",
+      ens: "tally.hermes.eth",
       text: tallyText,
       ts: Date.now(),
     });

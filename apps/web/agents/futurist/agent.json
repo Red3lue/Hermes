@@ -1,5 +1,5 @@
 {
-  "ens": "futurist.hermes-demo.eth",
+  "ens": "futurist.hermes.eth",
   "address": "",
   "roles": ["quorum"],
   "x25519PubKey": "",

@@ -1,0 +1,34 @@
+{
+  "concierge": {
+    "ens": "concierge.hermes.eth",
+    "role": "chatbot",
+    "displayName": "Concierge",
+    "tagline": "Confidential 1:1 assistant"
+  },
+  "architect": {
+    "ens": "architect.hermes.eth",
+    "role": "quorum",
+    "displayName": "Architect"
+  },
+  "auditor": {
+    "ens": "auditor.hermes.eth",
+    "role": "quorum",
+    "displayName": "Auditor"
+  },
+  "pragmatist": {
+    "ens": "pragmatist.hermes.eth",
+    "role": "quorum",
+    "displayName": "Pragmatist"
+  },
+  "skeptic": {
+    "ens": "skeptic.hermes.eth",
+    "role": "quorum",
+    "displayName": "Skeptic"
+  },
+  "futurist": {
+    "ens": "futurist.hermes.eth",
+    "role": "quorum",
+    "displayName": "Futurist"
+  },
+  "demoBiome": { "ens": "quorum.biomes.hermes.eth" }
+}

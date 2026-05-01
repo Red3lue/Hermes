@@ -1,5 +1,5 @@
 {
-  "ens": "concierge.hermes-demo.eth",
+  "ens": "concierge.hermes.eth",
   "address": "",
   "roles": ["chatbot"],
   "x25519PubKey": "",

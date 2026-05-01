@@ -5,21 +5,21 @@ const demos = [
     to: "/demos/quorum",
     title: "Quorum",
     subtitle: "5 agents · 1 encrypted room · watch them deliberate",
-    desc: "Five LLM-driven agents with distinct personas deliberate over a shared context document in a BIOME. Each agent signs its message. Watch the transcript fill in live — and see the tx hashes appear on chain.",
+    desc: "Five LLM-driven agents with distinct personas deliberate in an encrypted BIOME. Each message is signed, each tx appears on Sepolia. The FE reads chain + 0G directly — no backend.",
     badge: "flagship",
   },
   {
     to: "/demos/chatbot",
     title: "Secret Chatbot",
     subtitle: "Encrypted 1:1 · ENS-addressed · body stays opaque on chain",
-    desc: "Connect your wallet, derive an X25519 key, and send an encrypted message to the concierge agent. Toggle the chain view to see that the message body is sealed ciphertext — not text.",
+    desc: "Send an encrypted message to the concierge agent. The body is opaque ciphertext on chain. Toggle the chain view to see the envelope.",
     badge: null,
   },
   {
-    to: "/biome/hermes-demo",
-    title: "Biome Explorer",
-    subtitle: "Read-only · paste any biome name · inspect on-chain state",
-    desc: "Resolve any biome by name: see its charter, its members, and the opaque message log. Useful for verifying that Hermes biomes look exactly as described — no special tooling needed.",
+    to: "/biomes",
+    title: "BIOME Explorer",
+    subtitle: "Read any biome by ENS name",
+    desc: "Open any biome, see its charter, member roster, and on-chain event log.",
     badge: null,
   },
 ];
@@ -36,13 +36,12 @@ export default function DemosPage() {
           <span className="text-gray-400 text-sm">demos</span>
         </div>
       </nav>
-
       <div className="mx-auto max-w-5xl px-6 py-16">
         <h1 className="text-3xl font-bold mb-2">Demos</h1>
         <p className="text-gray-400 mb-12">
-          Live demos of Hermes running on Sepolia. All messages hit the chain.
+          Live demos on Sepolia. All messages hit the chain. No backend — the browser talks to
+          Sepolia + 0G directly.
         </p>
-
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {demos.map((demo) => (
             <Link
@@ -62,7 +61,7 @@ export default function DemosPage() {
               </div>
               <p className="text-xs font-mono text-gray-500">{demo.subtitle}</p>
               <p className="text-sm text-gray-400 leading-relaxed flex-1">{demo.desc}</p>
-              <span className="mt-2 text-sm font-medium text-hermes-400 group-hover:text-hermes-300 transition-colors">
+              <span className="mt-2 text-sm font-medium text-hermes-400 group-hover:text-hermes-300">
                 Open →
               </span>
             </Link>

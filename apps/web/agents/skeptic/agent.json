@@ -1,5 +1,5 @@
 {
-  "ens": "skeptic.hermes-demo.eth",
+  "ens": "skeptic.hermes.eth",
   "address": "",
   "roles": ["quorum"],
   "x25519PubKey": "",

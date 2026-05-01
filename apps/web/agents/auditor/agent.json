@@ -1,5 +1,5 @@
 {
-  "ens": "auditor.hermes-demo.eth",
+  "ens": "auditor.hermes.eth",
   "address": "",
   "roles": ["quorum"],
   "x25519PubKey": "",

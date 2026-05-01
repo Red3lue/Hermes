@@ -18,7 +18,7 @@ import { getDefaultContext } from "./registry.js";
 import { getStore } from "./quorum-store.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
-const QUORUM_BIOME = process.env.QUORUM_BIOME_NAME ?? "quorum.hermes-demo.eth";
+const QUORUM_BIOME = process.env.QUORUM_BIOME_NAME ?? "quorum.hermes.eth";
 
 const app = express();
 

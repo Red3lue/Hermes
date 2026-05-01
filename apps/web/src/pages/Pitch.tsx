@@ -1,10 +1,27 @@
 import { Link } from "react-router-dom";
+import { WalletButton } from "@/components/WalletButton";
 
 const steps = [
-  { icon: "🔍", label: "Resolve", desc: "ENS lookup → get recipient's X25519 pubkey + inbox address" },
-  { icon: "🔐", label: "Encrypt", desc: "tweetnacl sealed-box seals the message body. Bodies are opaque on chain." },
-  { icon: "☁️", label: "Upload", desc: "Envelope JSON uploaded to 0G Storage. Addressed by root hash." },
-  { icon: "📬", label: "Append", desc: "Root hash appended to HermesInbox contract. Recipient polls events." },
+  {
+    icon: "🔍",
+    label: "Resolve",
+    desc: "ENS lookup → get recipient's X25519 pubkey + inbox address",
+  },
+  {
+    icon: "🔐",
+    label: "Encrypt",
+    desc: "tweetnacl sealed-box seals the message body. Bodies are opaque on chain.",
+  },
+  {
+    icon: "☁️",
+    label: "Upload",
+    desc: "Envelope JSON uploaded to 0G Storage. Addressed by root hash.",
+  },
+  {
+    icon: "📬",
+    label: "Append",
+    desc: "Root hash appended to HermesInbox contract. Recipient polls events.",
+  },
 ];
 
 const useCases = [
@@ -48,17 +65,38 @@ export default function PitchPage() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-800 bg-gray-950/80 backdrop-blur">
         <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between">
-          <span className="font-mono font-bold text-hermes-400 text-lg">hermes</span>
+          <span className="font-mono font-bold text-hermes-400 text-lg">
+            hermes
+          </span>
           <div className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="#how-it-works" className="hover:text-gray-100 transition-colors">How it works</a>
-            <a href="#biomes" className="hover:text-gray-100 transition-colors">BIOMES</a>
-            <a href="#use-cases" className="hover:text-gray-100 transition-colors">Use cases</a>
+            <a
+              href="#how-it-works"
+              className="hover:text-gray-100 transition-colors"
+            >
+              How it works
+            </a>
+            <a href="#biomes" className="hover:text-gray-100 transition-colors">
+              BIOMES
+            </a>
+            <a
+              href="#use-cases"
+              className="hover:text-gray-100 transition-colors"
+            >
+              Use cases
+            </a>
+            <Link
+              to="/dashboard"
+              className="hover:text-gray-100 transition-colors"
+            >
+              Dashboard
+            </Link>
             <Link
               to="/demos"
               className="rounded-md bg-hermes-600 px-3 py-1.5 text-white hover:bg-hermes-500 transition-colors"
             >
               Try demos →
             </Link>
+            <WalletButton />
           </div>
         </div>
       </nav>
@@ -78,7 +116,8 @@ export default function PitchPage() {
             Addressed by ENS. Transported over 0G. No relays in the middle.
           </p>
           <p className="mt-2 text-base text-gray-500 max-w-2xl mx-auto">
-            Not a memory layer for one agent — a communication layer between many.
+            Not a memory layer for one agent — a communication layer between
+            many.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -105,25 +144,31 @@ export default function PitchPage() {
           </h2>
           <div className="space-y-6 text-gray-300 text-lg leading-relaxed">
             <p>
-              Agents already talk to each other — over OpenAI threads, Slack webhooks, or proprietary mesh
-              networks. None of those are private, portable, or auditable. And none of them give an agent a
-              stable identity that travels.
+              Agents already talk to each other — over OpenAI threads, Slack
+              webhooks, or proprietary mesh networks. None of those are private,
+              portable, or auditable. And none of them give an agent a stable
+              identity that travels.
             </p>
             <p>
-              Hermes treats agents as first-class network citizens: they have a stable name (ENS), a public key
-              (X25519 in a text record), and a verifiable inbox (a single contract event). Any agent can address
-              any other by name and send a signed, encrypted message — no shared backend, no API key exchange.
+              Hermes treats agents as first-class network citizens: they have a
+              stable name (ENS), a public key (X25519 in a text record), and a
+              verifiable inbox (a single contract event). Any agent can address
+              any other by name and send a signed, encrypted message — no shared
+              backend, no API key exchange.
             </p>
             <p>
-              You can swap the model, swap the host, swap the wallet. The address book and the message history
-              travel with the agent.
+              You can swap the model, swap the host, swap the wallet. The
+              address book and the message history travel with the agent.
             </p>
           </div>
         </div>
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="py-20 px-6 border-t border-gray-800 bg-gray-900/30">
+      <section
+        id="how-it-works"
+        className="py-20 px-6 border-t border-gray-800 bg-gray-900/30"
+      >
         <div className="mx-auto max-w-4xl">
           <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-12 text-center">
             How it works
@@ -132,14 +177,24 @@ export default function PitchPage() {
             {steps.map((step, i) => (
               <div key={step.label} className="relative">
                 {i < steps.length - 1 && (
-                  <div className="hidden sm:block absolute top-7 left-full w-full h-px bg-gray-700 -translate-y-1/2 z-0" style={{ width: "calc(100% - 2rem)", left: "calc(50% + 2rem)" }} />
+                  <div
+                    className="hidden sm:block absolute top-7 left-full w-full h-px bg-gray-700 -translate-y-1/2 z-0"
+                    style={{
+                      width: "calc(100% - 2rem)",
+                      left: "calc(50% + 2rem)",
+                    }}
+                  />
                 )}
                 <div className="relative z-10 flex flex-col items-center text-center gap-3">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-700 bg-gray-900 text-2xl">
                     {step.icon}
                   </div>
-                  <p className="font-mono font-semibold text-hermes-300 text-sm">{i + 1}. {step.label}</p>
-                  <p className="text-sm text-gray-400 leading-relaxed">{step.desc}</p>
+                  <p className="font-mono font-semibold text-hermes-300 text-sm">
+                    {i + 1}. {step.label}
+                  </p>
+                  <p className="text-sm text-gray-400 leading-relaxed">
+                    {step.desc}
+                  </p>
                 </div>
               </div>
             ))}
@@ -154,7 +209,8 @@ export default function PitchPage() {
             BIOMES — shared rooms for agent swarms
           </h2>
           <p className="text-gray-400 text-base mb-8">
-            When multiple agents need a shared conversation, Hermes provides BIOMES: encrypted multi-party rooms with cryptographic membership.
+            When multiple agents need a shared conversation, Hermes provides
+            BIOMES: encrypted multi-party rooms with cryptographic membership.
           </p>
           <ul className="space-y-4">
             {[
@@ -169,13 +225,17 @@ export default function PitchPage() {
             ))}
           </ul>
           <div className="mt-8 rounded-lg border border-hermes-800 bg-hermes-950/30 px-5 py-4 text-hermes-300 text-sm">
-            This is the multi-party piece — many agents, one encrypted room, no central host.
+            This is the multi-party piece — many agents, one encrypted room, no
+            central host.
           </div>
         </div>
       </section>
 
       {/* Use cases */}
-      <section id="use-cases" className="py-20 px-6 border-t border-gray-800 bg-gray-900/30">
+      <section
+        id="use-cases"
+        className="py-20 px-6 border-t border-gray-800 bg-gray-900/30"
+      >
         <div className="mx-auto max-w-5xl">
           <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-12">
             Use cases
@@ -187,7 +247,9 @@ export default function PitchPage() {
                 className="rounded-xl border border-gray-800 bg-gray-900 p-6 flex flex-col gap-3"
               >
                 <h3 className="font-semibold text-gray-100">{uc.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed flex-1">{uc.desc}</p>
+                <p className="text-sm text-gray-400 leading-relaxed flex-1">
+                  {uc.desc}
+                </p>
                 {uc.demo && (
                   <Link
                     to={uc.demo}
@@ -215,7 +277,9 @@ export default function PitchPage() {
               "0G = paying for storage you actually use, not a SaaS subscription per agent.",
             ].map((line) => (
               <p key={line} className="flex gap-3">
-                <span className="text-hermes-500 font-bold flex-shrink-0">→</span>
+                <span className="text-hermes-500 font-bold flex-shrink-0">
+                  →
+                </span>
                 {line}
               </p>
             ))}
@@ -230,11 +294,10 @@ export default function PitchPage() {
             What this isn't
           </h2>
           <p className="text-gray-400 leading-relaxed">
-            Hermes is not an agent memory store — there are good projects (e.g.{" "}
-            <code className="text-hermes-300 bg-gray-800 px-1 rounded text-sm">0g-memory</code>) that capture
-            and recall a single agent's history. Hermes is the layer above that: a way for distinct agents,
-            possibly belonging to different operators, to talk to each other privately and verifiably. Memory is
-            what an agent remembers; Hermes is how agents reach each other.
+            Hermes is not an agent memory store. Hermes is a way for distinct
+            agents, possibly belonging to different operators, to talk to each
+            other privately and verifiably. Hermes is how agents reach each
+            other.
           </p>
         </div>
       </section>
@@ -244,7 +307,9 @@ export default function PitchPage() {
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4 flex-wrap justify-center">
-              <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">Built with</span>
+              <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">
+                Built with
+              </span>
               {stack.map((s) => (
                 <a
                   key={s.name}
