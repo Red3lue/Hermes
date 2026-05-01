@@ -1,10 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { AgentAvatar } from "@/components/AgentAvatar";
+import { WalletButton } from "@/components/WalletButton";
 import { useQuorumStream } from "@/hooks/useQuorumStream";
 import { api, type AgentInfo, type ContextState } from "@/lib/api";
+import { useWallet } from "@/hooks/useWallet";
+import { getEnsOwner } from "@/lib/ensOwner";
+import { publicClient } from "@/lib/chainConfig";
 
-const BIOME_NAME = import.meta.env.VITE_QUORUM_BIOME ?? "quorum.hermes.eth";
+const BIOME_NAME = import.meta.env.VITE_QUORUM_BIOME ?? "quorum.biomes.hermes.eth";
+
+function buildAuthMessage(biomeName: string, ts: number, context: string): string {
+  return [
+    "Hermes biome context update v1",
+    `biome: ${biomeName}`,
+    `ts: ${ts}`,
+    "---",
+    context,
+  ].join("\n");
+}
 
 const VERDICT_COLORS: Record<string, string> = {
   agree: "text-emerald-400",
@@ -62,13 +76,22 @@ function PersonaModal({
 
 export default function QuorumPage() {
   const { entries, running, runRound } = useQuorumStream(BIOME_NAME);
+  const { address, walletClient } = useWallet();
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [contextState, setContextState] = useState<ContextState | null>(null);
   const [editingContext, setEditingContext] = useState(false);
   const [draftContext, setDraftContext] = useState("");
   const [savingContext, setSavingContext] = useState(false);
+  const [contextError, setContextError] = useState<string | null>(null);
+  const [biomeOwner, setBiomeOwner] = useState<`0x${string}` | null>(null);
+  const [ownerError, setOwnerError] = useState<string | null>(null);
   const [personaAgent, setPersonaAgent] = useState<AgentInfo | null>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
+
+  const isOwner =
+    !!address &&
+    !!biomeOwner &&
+    address.toLowerCase() === biomeOwner.toLowerCase();
 
   useEffect(() => {
     api.agents
@@ -78,6 +101,9 @@ export default function QuorumPage() {
       setContextState(c);
       setDraftContext(c.context);
     });
+    getEnsOwner(BIOME_NAME, publicClient)
+      .then(setBiomeOwner)
+      .catch((e: Error) => setOwnerError(e.message));
   }, []);
 
   // Auto-scroll transcript
@@ -89,15 +115,39 @@ export default function QuorumPage() {
 
   async function saveContext() {
     if (!draftContext.trim()) return;
+    if (!walletClient || !address) {
+      setContextError("Connect your wallet to upload context.");
+      return;
+    }
+    if (!isOwner) {
+      setContextError(
+        `Only the ENS owner of ${BIOME_NAME} can update context.`,
+      );
+      return;
+    }
     setSavingContext(true);
+    setContextError(null);
     try {
-      const result = await api.context.set(BIOME_NAME, draftContext);
+      const trimmed = draftContext.trim();
+      const ts = Date.now();
+      const message = buildAuthMessage(BIOME_NAME, ts, trimmed);
+      const signature = await walletClient.signMessage({
+        account: address,
+        message,
+      });
+      const result = await api.context.set(BIOME_NAME, trimmed, {
+        address,
+        signature,
+        ts,
+      });
       setContextState((prev) => ({
-        context: draftContext,
+        context: trimmed,
         version: result.version,
         rootHash: result.rootHash ?? prev?.rootHash ?? "",
       }));
       setEditingContext(false);
+    } catch (err) {
+      setContextError((err as Error).message);
     } finally {
       setSavingContext(false);
     }
@@ -133,6 +183,7 @@ export default function QuorumPage() {
               round in progress
             </span>
           )}
+          <WalletButton />
         </div>
       </nav>
 
@@ -180,6 +231,13 @@ export default function QuorumPage() {
             >
               <span className="font-mono font-semibold">Context</span>
               <div className="flex items-center gap-3">
+                {biomeOwner && (
+                  <span
+                    className={`text-xs rounded px-1.5 py-0.5 border ${isOwner ? "border-emerald-700 text-emerald-400" : "border-gray-700 text-gray-500"}`}
+                  >
+                    {isOwner ? "owner" : "read-only"}
+                  </span>
+                )}
                 {contextState && (
                   <span className="text-xs font-mono text-gray-600">
                     v{contextState.version}
@@ -190,26 +248,60 @@ export default function QuorumPage() {
             </button>
             {editingContext && (
               <div className="px-4 pb-4 flex flex-col gap-3">
+                {ownerError && (
+                  <p className="text-xs text-red-400">
+                    Could not resolve biome owner: {ownerError}
+                  </p>
+                )}
+                {biomeOwner && (
+                  <p className="text-xs font-mono text-gray-500">
+                    biome owner: <span className="text-gray-300">{biomeOwner}</span>
+                    {address && (
+                      <>
+                        {" · "}
+                        you:{" "}
+                        <span
+                          className={
+                            isOwner ? "text-emerald-400" : "text-gray-400"
+                          }
+                        >
+                          {address}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                )}
+                {!isOwner && (
+                  <p className="text-xs text-gray-500">
+                    Only the ENS owner of <code>{BIOME_NAME}</code> can upload
+                    context.{" "}
+                    {address
+                      ? "Your wallet does not match — switch accounts."
+                      : "Connect the owner wallet to enable editing."}
+                  </p>
+                )}
                 <textarea
-                  className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm text-gray-200 font-mono resize-none focus:border-hermes-600 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm text-gray-200 font-mono resize-none focus:border-hermes-600 focus:outline-none disabled:opacity-50"
                   rows={8}
                   value={draftContext}
                   onChange={(e) => setDraftContext(e.target.value)}
                   placeholder="Paste a proposal or question for the agents to deliberate on…"
+                  disabled={!isOwner}
                 />
                 <div className="flex items-center gap-3">
                   <button
                     className="rounded-md bg-hermes-600 px-4 py-1.5 text-sm font-semibold hover:bg-hermes-500 disabled:opacity-50 transition-colors"
                     onClick={saveContext}
-                    disabled={savingContext}
+                    disabled={savingContext || !isOwner}
                   >
-                    {savingContext ? "Saving…" : "Save context"}
+                    {savingContext ? "Signing…" : "Sign & upload"}
                   </button>
                   <button
                     className="rounded-md border border-gray-700 px-4 py-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors"
                     onClick={() => {
                       setDraftContext(contextState?.context ?? "");
                       setEditingContext(false);
+                      setContextError(null);
                     }}
                   >
                     Cancel
@@ -226,6 +318,9 @@ export default function QuorumPage() {
                     </button>
                   )}
                 </div>
+                {contextError && (
+                  <p className="text-xs text-red-400">{contextError}</p>
+                )}
               </div>
             )}
           </div>

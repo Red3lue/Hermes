@@ -88,10 +88,14 @@ export const api = {
   context: {
     get: (biomeName: string) =>
       get<ContextState>(`/biome/${encodeURIComponent(biomeName)}/context`),
-    set: (biomeName: string, context: string) =>
+    set: (
+      biomeName: string,
+      context: string,
+      auth: { address: string; signature: string; ts: number },
+    ) =>
       post<{ ok: boolean; version: number; rootHash: string }>(
         `/biome/${encodeURIComponent(biomeName)}/context`,
-        { context },
+        { context, auth },
       ),
     resolve: (biomeName: string) =>
       get<BiomeResolveResult>(`/biome/${encodeURIComponent(biomeName)}/resolve`),

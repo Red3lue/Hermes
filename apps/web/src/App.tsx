@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PitchPage from "./pages/Pitch";
 import DemosPage from "./pages/Demos";
-import DemoQuorumPage from "./pages/DemoQuorum";
-import DemoChatbotPage from "./pages/DemoChatbot";
+import QuorumPage from "./pages/Quorum";
+import ChatbotPage from "./pages/Chatbot";
 import DashboardPage from "./pages/Dashboard";
 import AgentDetailPage from "./pages/AgentDetail";
 import AgentNewPage from "./pages/AgentNew";
@@ -17,8 +17,8 @@ export default function App() {
         <Route path="/" element={<PitchPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/demos" element={<DemosPage />} />
-        <Route path="/demos/quorum" element={<DemoQuorumPage />} />
-        <Route path="/demos/chatbot" element={<DemoChatbotPage />} />
+        <Route path="/demos/quorum" element={<QuorumPage />} />
+        <Route path="/demos/chatbot" element={<ChatbotPage />} />
         <Route path="/agents/new" element={<AgentNewPage />} />
         <Route path="/agents/:ens" element={<AgentDetailPage />} />
         <Route path="/biomes" element={<BiomeListPage />} />

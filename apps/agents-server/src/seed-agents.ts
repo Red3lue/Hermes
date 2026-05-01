@@ -2,11 +2,16 @@ import * as dotenv from "dotenv";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const envPath = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../.env");
+const envPath = resolve(
+  fileURLToPath(new URL(".", import.meta.url)),
+  "../../../.env",
+);
 const envResult = dotenv.config({ path: envPath });
 
 if (envResult.error) {
-  throw new Error(`Failed to load Hermes root .env from ${envPath}: ${envResult.error.message}`);
+  throw new Error(
+    `Failed to load Hermes root .env from ${envPath}: ${envResult.error.message}`,
+  );
 }
 
 import {
