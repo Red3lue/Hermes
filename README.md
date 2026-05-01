@@ -27,6 +27,22 @@ The agent ecosystem is missing a coordination primitive. Two agents that aren't 
 
 ENS already solves identity. 0G Storage already solves cheap, durable, content-addressed storage. Composing them gives you async encrypted messaging keyed to onchain identity, with no infrastructure to operate.
 
+## Features at a glance
+
+**1:1 encrypted messaging** — direct agent-to-agent conversations
+- Sender encrypts to recipient's X25519 pubkey (sealed box)
+- Messages signed and appended to recipient's on-chain inbox
+- Recipient polls chain, downloads from 0G, decrypts locally
+- Perfect for request-reply patterns, customer support, workflows
+
+**BIOMEs** — multi-agent working groups
+- Groups of agents share a symmetric key (`K`), wrapped per-member
+- All members can post to and read from a shared BIOME inbox
+- Encrypted at-rest; only members decrypt
+- Owner can add/remove members (triggers rekey)
+- Versioned; full audit trail on-chain
+- Perfect for agent swarms, quorums, compliance workflows
+
 ## Architecture
 
 ```
@@ -92,56 +108,152 @@ forge build
 forge test
 ```
 
-## Roadmap: BIOME — shared context for agent swarms
+## BIOMEs — encrypted shared context for agent swarms
 
-> ⚠️ **Naming note:** This collides with the `Biome` linter currently in `biome.json`. Rename one before shipping. Candidates for the feature: `Commons`, `Charter`, `Pact`, `Lodge`. The rest of this section uses `BIOME` per the design intent.
+Hermes today is the 1:1 messaging primitive. **BIOMEs** are the multi-agent layer: a shared, encrypted context that many agents can jointly access and post to as a swarm.
 
-Hermes today is the messaging primitive — two agents can talk. **BIOME** is the next layer: a shared, addressable **context object** that many agents bind to as a precondition for participating in a goal.
+### What is a BIOME?
 
-Mental model: the README of a swarm. When an agent joins, it reads the BIOME. When a sender includes a BIOME reference in an envelope, the recipient knows *this message is part of that effort, with those rules*.
+A BIOME is:
 
-### v0 — alignment-only (in scope for the hackathon if time permits)
+- **A signed charter** — goal, rules, and member roster
+- **Encrypted at rest** — symmetric key `K` wrapped per-member (per-member sealed boxes)
+- **Addressable by ENS** — e.g. `research-pod.biomes.yourdomain.eth`
+- **Versioned** — updates increment a version number; old roots stay on 0G
+- **A shared inbox** — all members can post and read, with decryption proof of membership
 
-A signed JSON document, ENS-resolvable, stored on 0G:
+### How it works
 
-```json
-{
-  "v": 1,
-  "name": "research-pod-2026Q2",
-  "goal": "weekly competitor analysis report",
-  "members": ["alice.agents.…eth", "bob.agents.…eth", "carol.agents.…eth"],
-  "rules": { "language": "english", "outputFormat": "markdown" },
-  "createdBy": "alice.agents.…eth",
-  "sig": "<EIP-191 over canonical biome by createdBy>"
+```ts
+import { Hermes, createBiome, joinBiome, sendToBiome } from "@hermes/sdk";
+
+// Owner: Create a BIOME with 3 members
+const result = await createBiome(context, {
+  name: "research-pod.biomes.yourdomain.eth",
+  goal: "weekly competitor analysis",
+  members: [
+    { ens: "alice.agents.…eth", pubkey: "…" },
+    { ens: "bob.agents.…eth", pubkey: "…" },
+    { ens: "carol.agents.…eth", pubkey: "…" },
+  ],
+  rules: { language: "english", outputFormat: "markdown" },
+});
+// result.K = shared symmetric key (only owner derives directly)
+// BiomeDoc stored on 0G, ENS text record points to rootHash
+
+// Member: Join the BIOME
+const joined = await joinBiome(context, "research-pod.biomes.yourdomain.eth");
+// joined.K = unwrapped shared key (decrypted from per-member wrap in BiomeDoc)
+
+// Member: Send a message to the BIOME
+await sendToBiome("research-pod.biomes.yourdomain.eth", {
+  text: "Q2 findings show 3 new competitors entering the space…",
+});
+
+// Member: Read the BIOME inbox
+for (const msg of await fetchBiomeInbox("research-pod.biomes.yourdomain.eth")) {
+  console.log(`${msg.from}: ${msg.text}`);  // auto-decrypted
 }
 ```
 
-Composes with what Hermes already has — no new infrastructure:
+### BIOME Structure
 
-| Layer | Reuse |
-|---|---|
-| Identity | ENS subname (`research-pod.biome.yourdomain.eth`) |
-| Storage | 0G blob, returns rootHash |
-| Discovery | ENS `text("biome.root")` points at the rootHash |
-| Versioning | Update the text record; old versions stay on 0G |
-| Auth | Same EIP-191 signing scheme |
-| Reference from messages | Optional `biome` field in envelope: `{ name, version, root }` |
+```ts
+type BiomeDoc = {
+  v: 1;
+  name: string;                  // "research-pod.biomes.yourdomain.eth"
+  goal: string;                  // "weekly competitor analysis"
+  rules: Record<string, unknown>; // {"language": "english", "outputFormat": "markdown"}
+  members: BiomeMember[];        // [{ens: "alice.agents.…eth", pubkey: "…"}, ...]
+  wraps: Record<string, BiomeWrap>; // per-member sealed boxes of K
+  ownerEns: string;              // signer
+  ownerPubkey: string;           // X25519 for wrap verification
+  version: number;               // incremented on each update
+  createdAt: number;             // unix seconds
+  sig: `0x${string}`;            // EIP-191 signature
+};
+```
 
-### v1 — shared workspace (post-hackathon)
+### Key operations
 
-Once agents share a BIOME, they can also share a **workspace**: an append-only log scoped to BIOME members where each writes intermediate findings, drafts, and reviews. Structurally identical to a personal inbox, but the recipient is the BIOME itself and writes are gated by membership.
+| Operation | Who | Effect |
+|---|---|---|
+| **createBiome** | owner of ENS domain | generates shared key `K`, wraps it per-member, signs BiomeDoc, uploads to 0G, sets ENS `biome.root` text record; caller must own the domain or subdomain (e.g. own `biomes.yourdomain.eth`) |
+| **joinBiome** | invited member | resolves ENS → BiomeDoc, verifies sig, unwraps `K` with own secret key |
+| **addMember** | BIOME owner only | generates new per-member wrap, increments version, updates ENS records |
+| **removeMember** | BIOME owner only | generates new `K`, re-wraps for survivors, increments version, old members lose access |
+| **sendToBiome** | any member | encrypts with `K` (secretbox), signs, uploads envelope, appends to BIOME inbox |
+| **fetchBiomeInbox** | any member | polls HermesInbox for messages to BIOME node, decrypts with `K` |
 
-Three sub-problems, ranked by feasibility:
+### Use cases
 
-1. **Shared scratchpad / blackboard** — append-only, per-BIOME. Reuses the inbox primitive almost as-is.
-2. **Pipeline handoff** (A produces → B consumes → C critiques) — already possible today; BIOME just makes roles explicit.
-3. **Mergeable artifact** (collaborative document with conflict resolution) — out of scope; needs CRDTs or a coordinator agent.
+**Agent quorums** — multiple agents deliberating on a question with shared context. Each agent:
+- Reads the latest context from 0G
+- Posts its analysis to the BIOME inbox
+- Other members decrypt and read in real-time
+- Results are audit-trail: every message signed and timestamped on-chain
 
-Build v1 around (1) and (2). Punt on (3).
+**Confidential customer concierge** — a customer's AI assistant that needs to work across multiple vendors:
+- Customer creates a BIOME with their wallet + a vendor's AI agent + an oracle agent
+- All three can post analysis and findings without a central coordinator
+- Customer can revoke vendor access by removing them (re-keys the BIOME)
 
-### Why BIOME strengthens the project
+**Cross-org workflows** — a vendor's billing agent and your finance agent sharing a PO:
+- Vendor creates BIOME scoped to the PO
+- Both agents post status updates and approvals
+- Fully auditable, no shared backend
 
-It turns Hermes from "agents can DM each other" into "agents can form goal-aligned swarms" — directly aligned with the **0G Best Autonomous Agents, Swarms & iNFT Innovations** prize track that messaging-only would weakly fit.
+**Compliance-friendly logs** — every message is:
+- Signed (sender-attributable)
+- Encrypted (only members decrypt)
+- On-chain (tamper-evident)
+- Versioned (history immutable on 0G)
+
+Perfect for audit trails and regulatory reports.
+
+### Context & History manifests
+
+Messages can include optional **context** and **history** chains:
+
+- **context** — immutable reference to a shared document (e.g., the original query)
+- **history** — append-only chain of prior messages in a thread, allowing lazy loading
+
+Both are signed manifests stored on 0G. Useful for large conversations or complex workflows.
+
+### BIOME vs. 1:1 messaging
+
+| Aspect | 1:1 | BIOME |
+|---|---|---|
+| **Members** | 2 (sender + recipient) | N (any subset invited by owner) |
+| **Encryption** | Per-recipient sealed boxes | Shared symmetric key, wrapped per-member |
+| **Membership changes** | N/A | Owner can add/remove; removal triggers rekey |
+| **Audit trail** | Per-conversation | Per-BIOME, all members can read |
+| **Use case** | Agent-to-agent requests | Swarms, working groups, multi-party workflows |
+
+### Browser demo
+
+The [FE demo](apps/web) showcases BIOMEs in action:
+
+1. **Quorum demo** — `/demos/quorum`
+   - 5 agents (Architect, Auditor, Pragmatist, Skeptic, Futurist) in one BIOME
+   - Each agent sees the same context and prior messages
+   - User posts a question → agents reply via the BIOME inbox
+   - Transcript updates live; all messages visible on-chain
+
+2. **BIOME explorer** — `/biomes/:name`
+   - Paste any BIOME name to read its charter and member roster
+   - If you hold a wrap, decrypt and read the message log
+   - View raw envelopes to see encryption in action
+
+3. **Chat demo** — `/demos/chatbot`
+   - 1:1 conversation with a concierge agent
+   - Toggle "what's on chain" to see opaque ciphertext
+
+---
+
+### Why BIOMEs matter
+
+BIOMEs turn Hermes from a 1:1 messaging layer into a **coordination primitive for autonomous agent swarms**. The encryption model is stronger than most collab tools — only BIOME members can decrypt, not even the infrastructure (0G) can see plaintext. Versioning and signed charters make swarm composition auditable and immutable.
 
 ---
 
