@@ -4,7 +4,12 @@ import {
   type Account,
   type Hash,
 } from "viem";
-import { resolveAgent, setAgentRecords, type AgentRecords } from "./ens";
+import {
+  resolveAgent,
+  resolveBiomeRecords,
+  setAgentRecords,
+  type AgentRecords,
+} from "./ens";
 import {
   generateKeyPairFromSignature,
   encryptMessage,
@@ -521,7 +526,17 @@ export class Hermes {
 
   private async loadBiome(name: string): Promise<CachedBiome> {
     const cached = this.biomeCache.get(name);
-    if (cached) return cached;
+    if (cached) {
+      // Cheap ENS read: if the on-chain version moved past the cached doc,
+      // the owner rotated K and we must re-join to pick up the new wrap.
+      try {
+        const onchain = await resolveBiomeRecords(name, this.cfg.publicClient);
+        if (onchain.version === cached.version) return cached;
+        this.biomeCache.delete(name);
+      } catch {
+        return cached;
+      }
+    }
 
     const ctx: BiomeContext = {
       publicClient: this.cfg.publicClient,

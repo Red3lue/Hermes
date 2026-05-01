@@ -1,6 +1,22 @@
 {
   "name": "biome-demo",
   "version": "0.0.0",
+  "type": "module",
   "private": true,
-  "type": "module"
+  "scripts": {
+    "start": "tsx index.ts",
+    "start:mock": "MODE=mock tsx index.ts",
+    "start:live": "MODE=live tsx index.ts"
+  },
+  "dependencies": {
+    "@ensdomains/ensjs": "^4.0.0",
+    "@hermes/sdk": "workspace:*",
+    "dotenv": "^16.4.5",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
+    "viem": "^1.17.0"
+  },
+  "devDependencies": {
+    "tsx": "^3.12.7"
+  }
 }
