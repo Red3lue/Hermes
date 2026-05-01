@@ -1,0 +1,7 @@
+{
+  "ens": "skeptic.hermes-demo.eth",
+  "address": "",
+  "roles": ["quorum"],
+  "x25519PubKey": "",
+  "ensSubnameRegistered": false
+}
