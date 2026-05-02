@@ -12,7 +12,7 @@
   },
   "auditor": {
     "ens": "auditor.hermes.eth",
-    "role": "quorum",
+    "role": "inactive",
     "displayName": "Auditor"
   },
   "pragmatist": {
@@ -27,7 +27,7 @@
   },
   "futurist": {
     "ens": "futurist.hermes.eth",
-    "role": "quorum",
+    "role": "inactive",
     "displayName": "Futurist"
   },
   "coordinator": {

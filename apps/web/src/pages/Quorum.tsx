@@ -200,7 +200,14 @@ export default function QuorumPage() {
     }
   }
 
-  const members = onchain.doc?.members ?? [];
+  // Public roster: prefer the on-chain BiomeDoc when the user is a member
+  // (authoritative). Fall back to the static known-agents.json filtered to
+  // quorum role so non-members still see who's deliberating.
+  const members =
+    onchain.doc?.members ??
+    Object.values(knownAgents)
+      .filter((a) => a.role === "quorum")
+      .map((a) => ({ ens: a.ens }));
 
   return (
     <div className="flex h-screen flex-col bg-gray-950 text-gray-100 overflow-hidden">

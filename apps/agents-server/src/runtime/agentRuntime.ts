@@ -87,17 +87,50 @@ export async function spawnAgentRuntime(
     }
   }
 
+  // The shared deployer wallet signs both the 0G `submit()` (Galileo) and
+  // the Sepolia `appendToInbox` for every agent runtime. When several agents
+  // dispatch concurrently (e.g. coordinator fanning out to 3 members while
+  // members reply with verdicts), ethers' nonce manager can fire two txs
+  // at the same nonce → "replacement transaction underpriced" / "nonce too
+  // low". Retry with backoff lets the racing tx land first, then we resubmit
+  // with a fresh nonce.
+  const NONCE_ERR =
+    /replacement transaction underpriced|REPLACEMENT_UNDERPRICED|nonce too low|already known/i;
+  const RETRIES = 4;
+  const BACKOFF_MS = [1500, 3000, 5000, 8000];
+
+  async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    let lastErr: unknown;
+    for (let i = 0; i <= RETRIES; i++) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastErr = err;
+        const msg = (err as Error).message ?? "";
+        if (!NONCE_ERR.test(msg) || i === RETRIES) throw err;
+        const wait = BACKOFF_MS[i] ?? BACKOFF_MS[BACKOFF_MS.length - 1];
+        console.warn(
+          `[runtime:${agent.slug}] ${label} nonce collision (attempt ${i + 1}/${RETRIES + 1}); retrying in ${wait}ms`,
+        );
+        await new Promise((r) => setTimeout(r, wait));
+      }
+    }
+    throw lastErr;
+  }
+
   const ctx: RuntimeContext = {
     agent,
     hermes,
-    sendDM: async (toEns, body) => {
-      const r = await hermes.send(toEns, body);
-      return { rootHash: r.rootHash };
-    },
-    broadcast: async (biomeName, body) => {
-      const r = await hermes.sendToBiome(biomeName, body);
-      return { rootHash: r.rootHash };
-    },
+    sendDM: async (toEns, body) =>
+      withRetry(`sendDM→${toEns}`, async () => {
+        const r = await hermes.send(toEns, body);
+        return { rootHash: r.rootHash };
+      }),
+    broadcast: async (biomeName, body) =>
+      withRetry(`broadcast→${biomeName}`, async () => {
+        const r = await hermes.sendToBiome(biomeName, body);
+        return { rootHash: r.rootHash };
+      }),
   };
 
   // Track last seen block per channel to avoid reprocessing.
@@ -119,10 +152,10 @@ export async function spawnAgentRuntime(
     if (stopped) return;
     try {
       // Snapshot the chain head once per tick. We'll advance every cursor
-      // (DM + each subscribed biome) past whatever range we just queried,
-      // so the next tick only looks at strictly-newer blocks. This is the
-      // hotfix to stop re-downloading the same N blobs every 5s when the
-      // cursor stays pinned to a block that contains old logs.
+      // (DM + each subscribed biome) up to `head`, so the next tick only
+      // looks at strictly-newer blocks. We can't go past `head` — viem will
+      // reject `fromBlock > current head` with "block range extends beyond
+      // current head block."
       const head = await publicClient.getBlockNumber();
 
       // 1. Fetch DMs since lastDmBlock
@@ -143,10 +176,10 @@ export async function spawnAgentRuntime(
             );
           }
         }
-        // Advance past the range we just scanned so the next tick won't
-        // re-fetch the same logs/blobs. `head + 1n` is the smallest block
-        // we have not yet looked at.
-        if (head >= sinceDm) lastDmBlock = head + 1n;
+        // Advance to head (not head+1) so the next tick won't re-fetch the
+        // same logs but stays within a valid `fromBlock` range. New logs
+        // landing at the same block will be filtered out by `seenRoots`.
+        if (head > sinceDm) lastDmBlock = head;
       }
 
       // 2. Fetch biome broadcasts for each subscribed biome
@@ -168,7 +201,7 @@ export async function spawnAgentRuntime(
               );
             }
           }
-          if (head >= since) lastBiomeBlock.set(biomeName, head + 1n);
+          if (head > since) lastBiomeBlock.set(biomeName, head);
         }
       }
     } catch (err) {
