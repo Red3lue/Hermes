@@ -189,6 +189,19 @@ export class Hermes {
     return this.policy;
   }
 
+  /** Public read-only handle to the underlying 0G storage adapter. Useful
+   * for callers that need to download or upload blobs outside the
+   * envelope/biome flow (e.g. resolving Anima/Animus). */
+  get blobStorage(): ZeroGStorage {
+    return this.storage;
+  }
+
+  /** Resolve and cache the biome's symmetric key K. Throws if not a member. */
+  async getBiomeKey(biomeName: string): Promise<Uint8Array> {
+    const biome = await this.loadBiome(biomeName);
+    return biome.K;
+  }
+
   /** Test/seed hook: mark a peer as having sent us a message before. */
   recordInboundPeer(peer: string): void {
     if (this.inboundPeersMem.has(peer)) return;

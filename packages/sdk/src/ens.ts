@@ -169,6 +169,40 @@ export async function setBiomeRecords(
   );
 }
 
+/** Set the agent's `hermes.anima` text record to a 0G rootHash. Caller
+ * must own the ENS subname. */
+export async function setAnimaRecord(
+  ens: string,
+  root: `0x${string}`,
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  return multicallResolver(
+    ens,
+    [{ key: "hermes.anima", value: root }],
+    undefined,
+    publicClient,
+    wallet,
+  );
+}
+
+/** Set the biome's `biome.animus` text record to a 0G rootHash. Caller
+ * must own the biome ENS subname. */
+export async function setAnimusRecord(
+  biomeName: string,
+  root: `0x${string}`,
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  return multicallResolver(
+    biomeName,
+    [{ key: "biome.animus", value: root }],
+    undefined,
+    publicClient,
+    wallet,
+  );
+}
+
 // wallet must be created with addEnsContracts(chain) as its chain
 export async function setAgentRecords(
   name: string,

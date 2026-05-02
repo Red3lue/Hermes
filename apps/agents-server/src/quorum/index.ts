@@ -4,6 +4,7 @@ import {
   getQuorumAgents,
 } from "../registry.js";
 import { spawnAgentRuntime } from "../runtime/agentRuntime.js";
+import { ensureBiomeAnimus } from "../runtime/soulsPrep.js";
 import { makeCoordinatorHandler } from "./coordinator.js";
 import { makeMemberHandler } from "./member.js";
 
@@ -31,6 +32,17 @@ export async function bootQuorum(biomeName: string): Promise<() => void> {
   console.log(
     `[quorum] booting: coordinator=${coordinator.slug}, members=[${members.map((m) => m.slug).join(", ")}], biome=${biomeName}`,
   );
+
+  // Auto-publish biome Animus from agents/_quorum/animus.md if not yet set
+  // and the file exists. Coordinator is the biome owner (deployer-controlled).
+  try {
+    await ensureBiomeAnimus(biomeName, coordinator);
+  } catch (err) {
+    console.warn(
+      `[quorum] animus auto-publish failed:`,
+      (err as Error).message,
+    );
+  }
 
   const stops: Array<() => void> = [];
 

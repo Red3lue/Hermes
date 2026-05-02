@@ -60,6 +60,22 @@ export function makeCoordinatorHandler(
       )
       .join("\n\n");
 
+    // Pull souls — own anima + biome animus — before synthesising.
+    const souls = await ctx.resolveSouls({ biomeName: opts.biomeName });
+    const extraSystemParts: string[] = [];
+    if (souls.anima) {
+      extraSystemParts.push(
+        `## Your Anima (your soul, owner-published context)\n${souls.anima}`,
+      );
+    }
+    if (souls.animus) {
+      extraSystemParts.push(
+        `## Biome Animus (the biome's shared soul — sealed for members only)\n${souls.animus}`,
+      );
+    }
+    const extraSystem =
+      extraSystemParts.length > 0 ? extraSystemParts.join("\n\n") : undefined;
+
     const userPrompt = [
       `## Original question\n${state.contextMarkdown}`,
       `## Member responses\n${memberBlock || "(no responses received)"}`,
@@ -71,6 +87,7 @@ export function makeCoordinatorHandler(
     try {
       markdown = await callLLM({
         persona: agent.persona,
+        extraSystemContent: extraSystem,
         history: [],
         userPrompt,
         maxTokens: 600,

@@ -125,3 +125,22 @@ export {
   type DecryptedBiomeEnvelope,
 } from "./biome";
 export { resolveBiomeRecords, setBiomeRecords } from "./ens";
+export { setAnimaRecord, setAnimusRecord } from "./ens";
+export {
+  buildAnima,
+  resolveAnima,
+  verifyAnima,
+  animaSigningPayload,
+  ANIMA_TEXT_KEY,
+  type AnimaDoc,
+  type UnsignedAnimaDoc,
+} from "./anima";
+export {
+  buildAnimus,
+  resolveAnimus,
+  verifyAnimus,
+  animusSigningPayload,
+  ANIMUS_TEXT_KEY,
+  type AnimusDoc,
+  type UnsignedAnimusDoc,
+} from "./animus";

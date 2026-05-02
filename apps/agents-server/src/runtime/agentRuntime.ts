@@ -1,11 +1,21 @@
 import {
   Hermes,
+  resolveAnima,
+  resolveAnimus,
+  ZeroGStorage,
   type ReceivedMessage,
   type BiomeReceivedMessage,
 } from "@hermes/sdk";
 import { getPublicClient, makeWalletClient } from "../chain.js";
 import type { AgentDef } from "../registry.js";
 import { ensureAgentKeystore } from "./keystorePrep.js";
+import { ensureAgentAnima } from "./soulsPrep.js";
+
+export type Souls = {
+  anima?: string; // own anima content
+  animus?: string; // biome animus content (decrypted)
+  otherAnimas?: Array<{ ens: string; content: string }>; // other agents' animas
+};
 
 export type RuntimeContext = {
   agent: AgentDef;
@@ -16,6 +26,13 @@ export type RuntimeContext = {
     biomeName: string,
     body: string,
   ) => Promise<{ rootHash: `0x${string}` }>;
+  /** Fetch own Anima + (if biome member) Animus + optionally other agents'
+   * Animas. Returns null fields when records aren't published. Cached by
+   * rootHash — re-fetches only if the ENS rootHash changed. */
+  resolveSouls: (opts?: {
+    biomeName?: string;
+    otherAgents?: string[];
+  }) => Promise<Souls>;
 };
 
 export type RoleHandler = {
@@ -52,6 +69,18 @@ export async function spawnAgentRuntime(
   const jitter = opts.pollJitterMs ?? DEFAULT_JITTER;
 
   await ensureAgentKeystore(agent);
+
+  // Idempotent: publish the agent's Anima from persona.md if not yet set.
+  // Quietly tolerated if it fails (network blip etc.) — runtime keeps
+  // booting and resolveSouls will retry on demand.
+  try {
+    await ensureAgentAnima(agent);
+  } catch (err) {
+    console.warn(
+      `[runtime:${agent.slug}] anima auto-publish failed:`,
+      (err as Error).message,
+    );
+  }
 
   const deployerKey = process.env.DEPLOYER_PRIVATE_KEY;
   if (!deployerKey) throw new Error("DEPLOYER_PRIVATE_KEY required");
@@ -118,6 +147,56 @@ export async function spawnAgentRuntime(
     throw lastErr;
   }
 
+  // Soul cache (Anima / Animus). Keyed by ENS for animas, by biome name
+  // for animus. Stored content + rootHash; re-fetch if rootHash changes
+  // (cheap check: one ENS getText). Lifetime: the runtime process.
+  const animaCache = new Map<string, { content: string; root: string }>();
+  const animusCache = new Map<string, { content: string; root: string }>();
+
+  async function fetchAnima(ens: string): Promise<string | undefined> {
+    try {
+      const r = await resolveAnima(
+        ens,
+        getPublicClient(),
+        hermes.blobStorage,
+      );
+      if (!r) return undefined;
+      const cached = animaCache.get(ens);
+      if (cached && cached.root === r.root) return cached.content;
+      animaCache.set(ens, { content: r.doc.content, root: r.root });
+      return r.doc.content;
+    } catch (err) {
+      console.warn(
+        `[runtime:${agent.slug}] anima fetch ${ens} failed:`,
+        (err as Error).message,
+      );
+      return undefined;
+    }
+  }
+
+  async function fetchAnimus(biomeName: string): Promise<string | undefined> {
+    try {
+      const K = await hermes.getBiomeKey(biomeName);
+      const r = await resolveAnimus(
+        biomeName,
+        K,
+        getPublicClient(),
+        hermes.blobStorage,
+      );
+      if (!r) return undefined;
+      const cached = animusCache.get(biomeName);
+      if (cached && cached.root === r.root) return cached.content;
+      animusCache.set(biomeName, { content: r.content, root: r.root });
+      return r.content;
+    } catch (err) {
+      console.warn(
+        `[runtime:${agent.slug}] animus fetch ${biomeName} failed:`,
+        (err as Error).message,
+      );
+      return undefined;
+    }
+  }
+
   const ctx: RuntimeContext = {
     agent,
     hermes,
@@ -131,6 +210,27 @@ export async function spawnAgentRuntime(
         const r = await hermes.sendToBiome(biomeName, body);
         return { rootHash: r.rootHash };
       }),
+    resolveSouls: async (opts) => {
+      const [anima, animus, otherAnimas] = await Promise.all([
+        fetchAnima(agent.ens),
+        opts?.biomeName ? fetchAnimus(opts.biomeName) : Promise.resolve(undefined),
+        opts?.otherAgents
+          ? Promise.all(
+              opts.otherAgents
+                .filter((e) => e !== agent.ens)
+                .map(async (e) => {
+                  const c = await fetchAnima(e);
+                  return c ? { ens: e, content: c } : null;
+                }),
+            ).then((arr) => arr.filter((x): x is { ens: string; content: string } => x !== null))
+          : Promise.resolve(undefined),
+      ]);
+      return {
+        anima,
+        animus,
+        otherAnimas: otherAnimas && otherAnimas.length > 0 ? otherAnimas : undefined,
+      };
+    },
   };
 
   // Track last seen block per channel to avoid reprocessing.

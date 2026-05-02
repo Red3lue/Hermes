@@ -29,12 +29,29 @@ export function makeMemberHandler(
         return;
       }
 
-      const extraSystem = [
+      // Pull souls before deliberating. Anima = own; Animus = biome-shared.
+      // Both optional — if records aren't published, we just deliberate
+      // with the persona alone.
+      const souls = await ctx.resolveSouls({ biomeName: opts.biomeName });
+
+      const extraSystemParts = [
         "You are participating in a multi-agent quorum.",
         "Respond with ONE concise paragraph (≤120 words).",
         "End with exactly: `VERDICT: <agree|disagree|abstain> — <one-line reason>`",
         "No markdown formatting, no headers.",
-      ].join(" ");
+      ];
+      if (souls.anima) {
+        extraSystemParts.push(
+          `\n\n## Your Anima (your soul, owner-published context)\n${souls.anima}`,
+        );
+      }
+      if (souls.animus) {
+        extraSystemParts.push(
+          `\n\n## Biome Animus (the biome's shared soul — sealed for members only)\n${souls.animus}`,
+        );
+      }
+      const extraSystem = extraSystemParts.join(" ");
+
       const userPrompt = [
         `## Context\n${body.contextMarkdown}`,
         "Write your one-paragraph response and verdict.",
