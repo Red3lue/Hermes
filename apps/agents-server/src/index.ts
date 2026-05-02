@@ -10,16 +10,14 @@ import express from "express";
 import cors from "cors";
 import { loadAgents } from "./registry.js";
 import { agentsRouter } from "./routes/agents.js";
-import { quorumRouter } from "./routes/quorum.js";
-import { contextRouter } from "./routes/context.js";
-import { chatbotRouter } from "./routes/chatbot.js";
 import { proxy0gRouter } from "./routes/proxy0g.js";
 import { registerRouter } from "./routes/register.js";
-import { getDefaultContext } from "./registry.js";
-import { getStore } from "./quorum-store.js";
+import { contextRouter } from "./routes/context.js";
+import { bootQuorum } from "./quorum/index.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
-const QUORUM_BIOME = process.env.QUORUM_BIOME_NAME ?? "quorum.biomes.hermes.eth";
+const QUORUM_BIOME =
+  process.env.QUORUM_BIOME_NAME ?? "quorum.biomes.hermes.eth";
 
 const app = express();
 
@@ -31,22 +29,27 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, ts: Date.now() });
 });
 
-app.use("/agents", agentsRouter);
-app.use("/quorum", quorumRouter);
-app.use("/biome", contextRouter);
-app.use("/chatbot", chatbotRouter);
-app.use(proxy0gRouter);
-app.use(registerRouter);
+// All quorum/chatbot/context HTTP routes are GONE — those flows now run
+// entirely on chain (0G + Sepolia HermesInbox). The HTTP surface that
+// remains is metadata-only:
+app.use("/agents", agentsRouter); // GET /agents — read-only persona/ENS lookup
+app.use("/biome", contextRouter); // GET /biome/:name/resolve — read-only BiomeDoc resolver
+app.use(proxy0gRouter); // 0G upload/download proxy (used by FE to bypass CORS)
+app.use(registerRouter); // POST /register-user — one-time ENS subname mint
 
-// Seed in-memory state with default context on boot
-function bootstrap() {
+async function bootstrap() {
   const agents = loadAgents();
   console.log(`[boot] ${agents.length} agents loaded`);
 
-  const store = getStore(QUORUM_BIOME);
-  if (!store.context) {
-    store.context = getDefaultContext();
-    console.log(`[boot] seeded default context for biome: ${QUORUM_BIOME}`);
+  // Boot the quorum runtime: spawns the coordinator + reporter + member
+  // polling loops. They watch HermesInbox on Sepolia and 0G blobs.
+  try {
+    await bootQuorum(QUORUM_BIOME);
+  } catch (err) {
+    console.error("[boot] quorum boot failed:", (err as Error).message);
+    console.error(
+      "       The HTTP server will still start, but no agents are listening.",
+    );
   }
 }
 
