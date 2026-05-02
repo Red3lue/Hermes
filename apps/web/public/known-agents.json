@@ -30,5 +30,17 @@
     "role": "quorum",
     "displayName": "Futurist"
   },
+  "coordinator": {
+    "ens": "coordinator.hermes.eth",
+    "role": "coordinator",
+    "displayName": "Coordinator",
+    "tagline": "Orchestrates the quorum, posts stage updates on chain"
+  },
+  "reporter": {
+    "ens": "reporter.hermes.eth",
+    "role": "reporter",
+    "displayName": "Reporter",
+    "tagline": "Synthesises member verdicts into the final report"
+  },
   "demoBiome": { "ens": "quorum.biomes.hermes.eth" }
 }

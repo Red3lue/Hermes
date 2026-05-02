@@ -12,6 +12,7 @@ export type AgentDef = {
   address: string;
   roles: string[];
   x25519PubKey: string;
+  x25519Version: number;
   persona: string; // raw markdown content
 };
 
@@ -39,6 +40,7 @@ export function loadAgents(): AgentDef[] {
       address: (agentJson.address as string) ?? "",
       roles: (agentJson.roles as string[]) ?? [],
       x25519PubKey: (agentJson.x25519PubKey as string) ?? "",
+      x25519Version: (agentJson.x25519Version as number) ?? 0,
       persona,
     };
   });
@@ -55,6 +57,14 @@ export function getAgent(slug: string): AgentDef | undefined {
 
 export function getQuorumAgents(): AgentDef[] {
   return loadAgents().filter((a) => a.roles.includes("quorum"));
+}
+
+export function getCoordinator(): AgentDef | undefined {
+  return loadAgents().find((a) => a.roles.includes("coordinator"));
+}
+
+export function getReporter(): AgentDef | undefined {
+  return loadAgents().find((a) => a.roles.includes("reporter"));
 }
 
 export function getChatbotAgent(): AgentDef | undefined {
