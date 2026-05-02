@@ -3,14 +3,8 @@ import { useState, useMemo } from "react";
 import { keccak256, toBytes } from "viem";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
-import {
-  setAgentRecords,
-  signEIP191,
-  animaSigningPayload,
-  setAnimaRecord,
-  type AnimaDoc,
-  type UnsignedAnimaDoc,
-} from "@hermes/sdk";
+import { setAgentRecords } from "@hermes/sdk";
+import { publishAnima } from "@/lib/animaClient";
 import { WalletButton } from "@/components/WalletButton";
 import { useWallet } from "@/hooks/useWallet";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
@@ -20,28 +14,6 @@ const { encodeBase64 } = naclUtil;
 const BASE = import.meta.env.VITE_AGENTS_SERVER_URL ?? "http://localhost:8787";
 const AGENTS_PARENT =
   import.meta.env.VITE_AGENTS_PARENT ?? "hermes.eth";
-
-// Mirror SDK canonicalize for the in-browser anima upload flow.
-function canonicalize(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
-  const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj)
-    .filter((k) => obj[k] !== undefined)
-    .sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalize(obj[k])}`).join(",")}}`;
-}
-
-async function uploadViaProxy(bytes: Uint8Array): Promise<`0x${string}`> {
-  const r = await fetch(`${BASE}/blob`, {
-    method: "POST",
-    headers: { "Content-Type": "application/octet-stream" },
-    body: bytes as BodyInit,
-  });
-  if (!r.ok) throw new Error(`proxy upload → ${r.status}`);
-  const j = (await r.json()) as { rootHash: `0x${string}` };
-  return j.rootHash;
-}
 
 /** Derive a per-agent X25519 keypair deterministically from a wallet
  * signature over a message that includes the agent's ENS. Same wallet +
@@ -123,29 +95,18 @@ export default function AgentNew() {
         walletClient as never,
       );
 
-      // 4. (Optional) publish initial Anima.
+      // 4. (Optional) publish initial Anima — encrypted with the agent's
+      //    own keys (self-box). Reuse the keys we just derived.
       if (animaContent.trim()) {
         setStep({ kind: "anima" });
-        const unsigned: UnsignedAnimaDoc = {
-          v: 1,
+        await publishAnima({
           ens,
           ownerAddr: address,
+          ownerPubkey: keys.pubkey,
+          ownerSecretKey: keys.secretKey,
           content: animaContent.trim(),
-          createdAt: Math.floor(Date.now() / 1000),
-        };
-        const sig = await signEIP191(
-          walletClient as never,
-          animaSigningPayload(unsigned),
-        );
-        const doc: AnimaDoc = { ...unsigned, sig };
-        const blob = new TextEncoder().encode(canonicalize(doc));
-        const root = await uploadViaProxy(blob);
-        await setAnimaRecord(
-          ens,
-          root,
-          publicClient,
-          walletClient as never,
-        );
+          walletClient,
+        });
       }
 
       setStep({ kind: "done", ens });

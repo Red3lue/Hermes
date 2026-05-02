@@ -6,6 +6,8 @@ import {
   animusSigningPayload,
   setAnimaRecord,
   setAnimusRecord,
+  encryptMessage,
+  decryptMessage,
   encryptBiomePayload,
   decryptBiomePayload,
   verifyAnima,
@@ -47,10 +49,9 @@ async function uploadViaProxy(bytes: Uint8Array): Promise<`0x${string}`> {
   return j.rootHash;
 }
 
-/** FE-side resolver for an agent's Anima. Reads ENS, fetches blob via the
- * 0G download path, verifies the signature against the ENS-resolved owner
- * address. Returns null if no record set. */
-export async function resolveAnimaFE(ens: string): Promise<{
+/** FE-side: read the agent's Anima ENS record + blob + verify sig. Does
+ * NOT decrypt. Returns null if record unset. */
+export async function peekAnimaFE(ens: string): Promise<{
   doc: AnimaDoc;
   root: `0x${string}`;
 } | null> {
@@ -66,6 +67,28 @@ export async function resolveAnimaFE(ens: string): Promise<{
   const ok = await verifyAnima(doc, agent.addr);
   if (!ok) throw new Error(`anima signature invalid for ${ens}`);
   return { doc, root };
+}
+
+/** FE-side: peek + decrypt with the agent's secret key. Caller must
+ * derive the secret from the owner's wallet (same wallet that signed
+ * the doc). */
+export async function resolveAnimaFE(
+  ens: string,
+  ownerSecretKey: string,
+): Promise<{
+  doc: AnimaDoc;
+  content: string;
+  root: `0x${string}`;
+} | null> {
+  const r = await peekAnimaFE(ens);
+  if (!r) return null;
+  const content = decryptMessage(
+    r.doc.ciphertext,
+    r.doc.nonce,
+    r.doc.ownerPubkey,
+    ownerSecretKey,
+  );
+  return { doc: r.doc, content, root: r.root };
 }
 
 /** FE-side resolver for a biome's Animus. Reads ENS, fetches blob,
@@ -111,19 +134,29 @@ export async function peekAnimusFE(biomeName: string): Promise<{
   return { doc, root };
 }
 
-/** Publish a new Anima for an agent the user owns. Two on-chain signatures:
- * one EIP-191 over the doc, one ENS multicall to setText. */
+/** Publish a new Anima. Encrypts content with the agent's own X25519
+ * keypair (self-box, same scheme as 1:1 messages) so only a holder of
+ * the secret can decrypt. Signs the encrypted doc with the wallet. */
 export async function publishAnima(args: {
   ens: string;
   ownerAddr: `0x${string}`;
+  ownerPubkey: string;
+  ownerSecretKey: string;
   content: string;
   walletClient: WalletClient;
 }): Promise<{ root: `0x${string}`; tx: `0x${string}` }> {
+  const { ciphertext, nonce } = encryptMessage(
+    args.content,
+    args.ownerPubkey,
+    args.ownerSecretKey,
+  );
   const unsigned: UnsignedAnimaDoc = {
     v: 1,
     ens: args.ens,
     ownerAddr: args.ownerAddr,
-    content: args.content,
+    ownerPubkey: args.ownerPubkey,
+    ciphertext,
+    nonce,
     createdAt: Math.floor(Date.now() / 1000),
   };
   const sig = await signEIP191(

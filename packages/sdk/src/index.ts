@@ -129,6 +129,8 @@ export { setAnimaRecord, setAnimusRecord } from "./ens";
 export {
   buildAnima,
   resolveAnima,
+  peekAnima,
+  decryptAnima,
   verifyAnima,
   animaSigningPayload,
   ANIMA_TEXT_KEY,

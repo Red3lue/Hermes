@@ -277,16 +277,8 @@ export default function BiomeNew() {
         walletClient as never,
       );
 
-      // Persist locally so it shows up in "joined" sidebar immediately.
-      try {
-        const KEY = "hermes.joinedBiomes";
-        const cur = JSON.parse(localStorage.getItem(KEY) ?? "[]") as string[];
-        if (!cur.includes(ens)) {
-          localStorage.setItem(KEY, JSON.stringify([...cur, ens]));
-        }
-      } catch {
-        /* ignore */
-      }
+      // The new biome will appear in the dashboard automatically — the
+      // on-chain owner discovery in useMyBiomes picks it up on next mount.
 
       setStep({ kind: "done", ens });
     } catch (err) {

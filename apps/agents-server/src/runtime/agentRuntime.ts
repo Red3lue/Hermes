@@ -1,6 +1,7 @@
 import {
   Hermes,
-  resolveAnima,
+  peekAnima,
+  decryptAnima,
   resolveAnimus,
   ZeroGStorage,
   type ReceivedMessage,
@@ -8,7 +9,7 @@ import {
 } from "@hermes/sdk";
 import { getPublicClient, makeWalletClient } from "../chain.js";
 import type { AgentDef } from "../registry.js";
-import { ensureAgentKeystore } from "./keystorePrep.js";
+import { ensureAgentKeystore, loadKeystoreFile } from "./keystorePrep.js";
 import { ensureAgentAnima } from "./soulsPrep.js";
 
 export type Souls = {
@@ -153,21 +154,29 @@ export async function spawnAgentRuntime(
   const animaCache = new Map<string, { content: string; root: string }>();
   const animusCache = new Map<string, { content: string; root: string }>();
 
-  async function fetchAnima(ens: string): Promise<string | undefined> {
+  /** Fetch + decrypt an Anima. Only works for animas this runtime can
+   * decrypt — i.e. the running agent's own (we have its keystore). Animas
+   * for *other* agents can be peeked (verify sig + cache rootHash) but
+   * not decrypted unless the caller supplies that agent's secret key,
+   * which the runtime doesn't have. */
+  async function fetchOwnAnima(): Promise<string | undefined> {
     try {
-      const r = await resolveAnima(
-        ens,
+      const r = await peekAnima(
+        agent.ens,
         getPublicClient(),
         hermes.blobStorage,
       );
       if (!r) return undefined;
-      const cached = animaCache.get(ens);
+      const cached = animaCache.get(agent.ens);
       if (cached && cached.root === r.root) return cached.content;
-      animaCache.set(ens, { content: r.doc.content, root: r.root });
-      return r.doc.content;
+      // Decrypt with our keystore-loaded secret.
+      const ks = loadKeystoreFile(agent.slug);
+      const content = decryptAnima(r.doc, ks.x25519.secretKey);
+      animaCache.set(agent.ens, { content, root: r.root });
+      return content;
     } catch (err) {
       console.warn(
-        `[runtime:${agent.slug}] anima fetch ${ens} failed:`,
+        `[runtime:${agent.slug}] anima fetch failed:`,
         (err as Error).message,
       );
       return undefined;
@@ -211,24 +220,18 @@ export async function spawnAgentRuntime(
         return { rootHash: r.rootHash };
       }),
     resolveSouls: async (opts) => {
-      const [anima, animus, otherAnimas] = await Promise.all([
-        fetchAnima(agent.ens),
+      // Anima is now encrypted to the agent's own pubkey, so the runtime
+      // can only decrypt its OWN. `otherAgents` parameter is preserved
+      // for API compatibility but no longer pulls other agents' animas
+      // (we don't hold their secret keys).
+      void opts?.otherAgents;
+      const [anima, animus] = await Promise.all([
+        fetchOwnAnima(),
         opts?.biomeName ? fetchAnimus(opts.biomeName) : Promise.resolve(undefined),
-        opts?.otherAgents
-          ? Promise.all(
-              opts.otherAgents
-                .filter((e) => e !== agent.ens)
-                .map(async (e) => {
-                  const c = await fetchAnima(e);
-                  return c ? { ens: e, content: c } : null;
-                }),
-            ).then((arr) => arr.filter((x): x is { ens: string; content: string } => x !== null))
-          : Promise.resolve(undefined),
       ]);
       return {
         anima,
         animus,
-        otherAnimas: otherAnimas && otherAnimas.length > 0 ? otherAnimas : undefined,
       };
     },
   };

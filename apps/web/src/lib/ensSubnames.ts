@@ -1,6 +1,22 @@
 import { namehash, type Address } from "viem";
 import { publicClient } from "./chainConfig";
 
+// Pattern emitted by the ENS subgraph for subnames whose label string it
+// couldn't recover (e.g. unwrapped subnames minted via Registry, where
+// only the labelhash is on chain). The subgraph renders these as
+// `[<64 hex>]` — note: NO `0x` prefix on the bracketed labelhash.
+// These are almost always duplicates of a subname we already know by
+// readable name; filtering them out cleans up the dashboard.
+const BRACKET_LABELHASH_RE = /^\[(?:0x)?[0-9a-f]{64}\]$/i;
+
+/** True if ANY dot-separated segment of the ENS name is in subgraph
+ * bracket-hash form (`[0x…64hex…]`). Use to defensively reject these
+ * anywhere they may have been cached or persisted. */
+export function hasBracketHashSegment(ens: string): boolean {
+  if (!ens) return false;
+  return ens.split(".").some((seg) => BRACKET_LABELHASH_RE.test(seg));
+}
+
 // Authoritative on-chain ownership check for an ENS name (subname or
 // otherwise) on Sepolia. Handles BOTH legacy unwrapped subnames (Registry
 // stores the owner directly) AND wrapped subnames (Registry returns the
@@ -95,12 +111,15 @@ export async function filterOwnedNames(
 const NAMESPACE_LABELS = new Set(["biomes", "users", "agents"]);
 
 /** Restrict an ENS name to a *direct* child of `parentEns`. Returns the
- * single-label child or null if not a direct child. */
+ * single-label child or null if not a direct child or if the label is in
+ * subgraph bracket-hash form (which is always a duplicate of a known
+ * readable name). */
 function directChildLabel(ens: string, parentEns: string): string | null {
   const suffix = `.${parentEns}`;
   if (!ens.endsWith(suffix)) return null;
   const label = ens.slice(0, -suffix.length);
   if (!label || label.includes(".")) return null;
+  if (BRACKET_LABELHASH_RE.test(label)) return null;
   return label;
 }
 
@@ -156,7 +175,11 @@ export async function getOwnedSubnames(
   }
 
   // (3) on-chain effective-owner probe
-  return filterOwnedNames([...candidates], ownerAddress);
+  const owned = await filterOwnedNames([...candidates], ownerAddress);
+
+  // (4) belt-and-suspenders: drop anything with a bracket-hash segment
+  // that slipped through earlier filters.
+  return owned.filter((n) => !hasBracketHashSegment(n));
 }
 
 export async function getOwnedBiomeSubnames(

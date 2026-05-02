@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { useMyAgents } from "@/hooks/useMyAgents";
 import { useMyBiomes } from "@/hooks/useMyBiomes";
@@ -14,18 +13,7 @@ export default function Dashboard() {
     owned: biomesOwned,
     all: biomesAll,
     loading: biomesLoading,
-    addJoined,
   } = useMyBiomes();
-  const [joinInput, setJoinInput] = useState("");
-  const [showJoin, setShowJoin] = useState(false);
-
-  function handleJoin() {
-    const name = joinInput.trim();
-    if (!name) return;
-    addJoined(name);
-    setJoinInput("");
-    setShowJoin(false);
-  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -115,38 +103,6 @@ export default function Dashboard() {
                 >
                   + New BIOME
                 </Link>
-              </div>
-              <div className="mb-3">
-                {showJoin ? (
-                  <div className="flex gap-2">
-                    <input
-                      className="flex-1 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-mono placeholder-gray-600 focus:border-hermes-600 focus:outline-none"
-                      placeholder="quorumv2.biomes.hermes.eth"
-                      value={joinInput}
-                      onChange={(e) => setJoinInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                    />
-                    <button
-                      onClick={handleJoin}
-                      className="rounded-lg bg-hermes-600 px-3 py-2 text-sm hover:bg-hermes-500"
-                    >
-                      Join
-                    </button>
-                    <button
-                      onClick={() => setShowJoin(false)}
-                      className="text-xs text-gray-600 hover:text-gray-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowJoin(true)}
-                    className="text-xs text-hermes-400 hover:text-hermes-300"
-                  >
-                    + Join a BIOME by name
-                  </button>
-                )}
               </div>
               {biomesLoading && (
                 <p className="text-xs text-gray-600">Discovering BIOMEs…</p>

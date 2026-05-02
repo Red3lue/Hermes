@@ -98,8 +98,20 @@ export async function ensureAgentAnima(agent: AgentDef): Promise<void> {
       : `0x${deployerKey}`) as `0x${string}`,
   });
 
+  // Anima is encrypted with the agent's own X25519 keypair (self-box).
+  // Only the runtime — which has the keystore — can decrypt for LLM
+  // context; the deployer-as-owner can also decrypt by reading the same
+  // keystore. Everyone else sees ciphertext.
+  const ks = loadKeystoreFile(agent.slug);
+
   const { root } = await buildAnima(
-    { ens: agent.ens, content, storage },
+    {
+      ens: agent.ens,
+      content,
+      ownerPubkey: ks.x25519.publicKey,
+      ownerSecretKey: ks.x25519.secretKey,
+      storage,
+    },
     wallet,
   );
   await setAnimaRecord(agent.ens, root, publicClient, wallet);
