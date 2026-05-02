@@ -109,6 +109,10 @@ export {
   buildUnsignedBiomeDoc,
   biomeSigningPayload,
   verifyBiomeDoc,
+  buildBiomeEnvelope,
+  decryptBiomeEnvelope,
+  encryptBiomePayload,
+  decryptBiomePayload,
   type BiomeDoc,
   type UnsignedBiomeDoc,
   type BiomeMember,
@@ -117,5 +121,7 @@ export {
   type CreateBiomeArgs,
   type CreateBiomeResult,
   type JoinBiomeResult,
+  type BuildBiomeEnvelopeArgs,
+  type DecryptedBiomeEnvelope,
 } from "./biome";
 export { resolveBiomeRecords, setBiomeRecords } from "./ens";

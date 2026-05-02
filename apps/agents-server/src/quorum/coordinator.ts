@@ -1,69 +1,23 @@
-import { namehash, type Address } from "viem";
-import { normalize } from "viem/ens";
-import { getPublicClient } from "../chain.js";
 import type { AgentDef } from "../registry.js";
 import type { RoleHandler, RuntimeContext } from "../runtime/agentRuntime.js";
 import { decodeBody, encodeBody, type QuorumBody } from "./envelopes.js";
-
-const ENS_REGISTRY: Address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e";
-const NAME_WRAPPER: Address = "0x0635513f179D50A207757E05759CbD106d7dFcE8";
-const REGISTRY_ABI = [
-  {
-    type: "function",
-    name: "owner",
-    stateMutability: "view",
-    inputs: [{ name: "node", type: "bytes32" }],
-    outputs: [{ name: "", type: "address" }],
-  },
-] as const;
-const WRAPPER_ABI = [
-  {
-    type: "function",
-    name: "ownerOf",
-    stateMutability: "view",
-    inputs: [{ name: "id", type: "uint256" }],
-    outputs: [{ name: "", type: "address" }],
-  },
-] as const;
-
-async function getEnsOwner(name: string): Promise<Address> {
-  const client = getPublicClient();
-  const node = namehash(normalize(name));
-  const reg = (await client.readContract({
-    address: ENS_REGISTRY,
-    abi: REGISTRY_ABI,
-    functionName: "owner",
-    args: [node],
-  })) as Address;
-  if (reg.toLowerCase() === NAME_WRAPPER.toLowerCase()) {
-    return (await client.readContract({
-      address: NAME_WRAPPER,
-      abi: WRAPPER_ABI,
-      functionName: "ownerOf",
-      args: [BigInt(node)],
-    })) as Address;
-  }
-  return reg;
-}
-
-async function ensAddrOf(ens: string): Promise<Address> {
-  const client = getPublicClient();
-  const { resolveAgent } = await import("@hermes/sdk");
-  const r = await resolveAgent(ens, client);
-  return r.addr;
-}
 
 const ROUND_TIMEOUT_MS = 90_000;
 
 type RoundState = {
   contextId: string;
   contextMarkdown: string;
-  ownerEns: string;
+  requesterEns: string;
   startedAt: number;
   members: AgentDef[]; // dispatch list
   verdicts: Map<
     string,
-    { slug: string; ens: string; text: string; verdict: "agree" | "disagree" | "abstain" }
+    {
+      slug: string;
+      ens: string;
+      text: string;
+      verdict: "agree" | "disagree" | "abstain";
+    }
   >;
   tallied: boolean;
   bundleSent: boolean;
@@ -122,10 +76,7 @@ export function makeCoordinatorHandler(
         `[coordinator] ${state.contextId.slice(0, 8)} bundle sent to reporter`,
       );
     } catch (err) {
-      console.warn(
-        `[coordinator] bundle send failed:`,
-        (err as Error).message,
-      );
+      console.warn(`[coordinator] bundle send failed:`, (err as Error).message);
       state.bundleSent = false;
     }
   }
@@ -139,30 +90,11 @@ export function makeCoordinatorHandler(
       // already processing
       return;
     }
-    // Verify sender is the biome owner.
-    let ownerAddr: Address;
-    let senderAddr: Address;
-    try {
-      ownerAddr = await getEnsOwner(opts.biomeName);
-      senderAddr = await ensAddrOf(senderEns);
-    } catch (err) {
-      console.warn(
-        `[coordinator] owner-check failed for ${opts.biomeName}:`,
-        (err as Error).message,
-      );
-      return;
-    }
-    if (ownerAddr.toLowerCase() !== senderAddr.toLowerCase()) {
-      console.warn(
-        `[coordinator] context from ${senderEns} (${senderAddr}) is NOT biome owner (${ownerAddr}); ignoring`,
-      );
-      return;
-    }
 
     const state: RoundState = {
       contextId: body.contextId,
       contextMarkdown: body.markdown,
-      ownerEns: senderEns,
+      requesterEns: senderEns,
       startedAt: Date.now(),
       members: opts.members,
       verdicts: new Map(),
@@ -171,7 +103,7 @@ export function makeCoordinatorHandler(
     };
     rounds.set(body.contextId, state);
     console.log(
-      `[coordinator] new round ${body.contextId.slice(0, 8)} from owner ${senderEns}`,
+      `[coordinator] new round ${body.contextId.slice(0, 8)} from ${senderEns}`,
     );
 
     // Broadcast started stage
@@ -179,7 +111,10 @@ export function makeCoordinatorHandler(
       kind: "stage",
       stage: "started",
       contextId: body.contextId,
-      meta: { ownerEns: senderEns, members: opts.members.map((m) => m.ens) },
+      meta: {
+        requesterEns: senderEns,
+        members: opts.members.map((m) => m.ens),
+      },
     };
     await ctx.broadcast(opts.biomeName, encodeBody(startedBody));
 

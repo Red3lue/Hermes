@@ -11,10 +11,7 @@ export type RuntimeContext = {
   agent: AgentDef;
   hermes: Hermes;
   // Convenience helpers
-  sendDM: (
-    toEns: string,
-    body: string,
-  ) => Promise<{ rootHash: `0x${string}` }>;
+  sendDM: (toEns: string, body: string) => Promise<{ rootHash: `0x${string}` }>;
   broadcast: (
     biomeName: string,
     body: string,
@@ -73,6 +70,22 @@ export async function spawnAgentRuntime(
     },
     keystorePath: `.hermes-runtime/${agent.slug}.json`,
   });
+
+  // For demo: allow coordinator to initiate public conversations so it can
+  // dispatch DMs to quorum members even with no prior inbound thread.
+  if (agent.roles.includes("coordinator")) {
+    try {
+      hermes.updatePolicy({ public: { canStartConversations: true } });
+      console.log(
+        `[runtime:${agent.slug}] policy updated: canStartConversations=true`,
+      );
+    } catch (err) {
+      console.warn(
+        `[runtime:${agent.slug}] failed to update policy:`,
+        (err as Error).message,
+      );
+    }
+  }
 
   const ctx: RuntimeContext = {
     agent,
@@ -133,7 +146,8 @@ export async function spawnAgentRuntime(
           for (const m of msgs) {
             if (seenRoots.has(m.rootHash)) continue;
             seenRoots.add(m.rootHash);
-            if (m.blockNumber > since) lastBiomeBlock.set(biomeName, m.blockNumber);
+            if (m.blockNumber > since)
+              lastBiomeBlock.set(biomeName, m.blockNumber);
             // Skip self-broadcasts (coordinator hearing its own stage events)
             if (m.from === agent.ens) continue;
             try {

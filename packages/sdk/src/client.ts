@@ -412,31 +412,69 @@ export class Hermes {
     for (const log of logs) {
       try {
         const bytes = await this.storage.downloadBlob(log.rootHash);
-        const envelope = parseEnvelope(bytes);
+        let envelope: Envelope | null = null;
+        try {
+          envelope = parseEnvelope(bytes);
+        } catch (e) {
+          envelope = null;
+        }
 
-        if (envelope.to !== biomeName || !envelope.biome) continue;
-        if (this.replay.check(envelope.from, envelope.nonce)) continue;
+        if (envelope) {
+          if (envelope.to !== biomeName || !envelope.biome) continue;
+          if (this.replay.check(envelope.from, envelope.nonce)) continue;
 
-        const decoded = await decryptBiomeEnvelope(
-          envelope,
-          biome.K,
-          biome.doc,
-          this.cfg.publicClient,
-        );
-        const biomeMeta = decoded.envelope.biome;
-        if (!biomeMeta) continue;
+          const decoded = await decryptBiomeEnvelope(
+            envelope,
+            biome.K,
+            biome.doc,
+            this.cfg.publicClient,
+          );
+          const biomeMeta = decoded.envelope.biome;
+          if (!biomeMeta) continue;
 
-        out.push({
-          origin: "biome",
-          biomeName,
-          from: decoded.envelope.from,
-          text: decoded.text,
-          ts: decoded.envelope.ts,
-          rootHash: log.rootHash,
-          blockNumber: log.blockNumber,
-          biomeVersion: biomeMeta.version,
-          thread: decoded.envelope.thread,
-        });
+          out.push({
+            origin: "biome",
+            biomeName,
+            from: decoded.envelope.from,
+            text: decoded.text,
+            ts: decoded.envelope.ts,
+            rootHash: log.rootHash,
+            blockNumber: log.blockNumber,
+            biomeVersion: biomeMeta.version,
+            thread: decoded.envelope.thread,
+          });
+        } else {
+          // Fallback: blob might be raw plaintext JSON (e.g., QuorumBody).
+          try {
+            const text = new TextDecoder().decode(bytes);
+            const maybe = JSON.parse(text) as { kind?: string } | null;
+            if (maybe && maybe.kind === "context") {
+              // try to attribute sender from the on-chain tx if possible
+              let from = "public";
+              try {
+                const tx = await this.cfg.publicClient.getTransaction({
+                  hash: log.transactionHash,
+                });
+                if (tx && (tx as any).from) from = (tx as any).from;
+              } catch {
+                /* ignore */
+              }
+
+              out.push({
+                origin: "biome",
+                biomeName,
+                from,
+                text,
+                ts: Math.floor(Date.now() / 1000),
+                rootHash: log.rootHash,
+                blockNumber: log.blockNumber,
+                biomeVersion: biome.version,
+              });
+            }
+          } catch (e) {
+            // non-JSON payload — ignore
+          }
+        }
       } catch (err) {
         console.warn(`drop biome msg ${log.rootHash}:`, (err as Error).message);
       }

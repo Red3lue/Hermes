@@ -1,5 +1,15 @@
 const BASE = import.meta.env.VITE_AGENTS_SERVER_URL ?? "http://localhost:8787";
 
+// Server HTTP surface is intentionally minimal:
+//   - GET /agents           — read-only persona/ENS metadata
+//   - GET /biome/:name/resolve — read-only BiomeDoc fetcher (used by BiomeViewer)
+//   - POST /register-user   — one-time ENS subname mint (in useUserAgent)
+//   - GET /blob/:root, POST /blob — 0G upload/download proxy (deployer pays)
+//
+// All quorum + chatbot message flow runs on chain (0G + Sepolia HermesInbox).
+// The browser uses @hermes/sdk + viem directly. There is no /quorum, /chatbot,
+// or /biome/:name/context HTTP endpoint anymore.
+
 export type AgentInfo = {
   slug: string;
   ens: string;
@@ -7,32 +17,6 @@ export type AgentInfo = {
   roles: string[];
   x25519PubKey: string;
   persona?: string;
-};
-
-export type TranscriptEntry = {
-  id: string;
-  slug: string;
-  ens: string;
-  text: string;
-  ts: number;
-  rootHash?: string;
-  verdict?: string;
-};
-
-export type ChatMessage = {
-  id: string;
-  role: "user" | "agent";
-  text: string;
-  ts: number;
-  rootHash?: string;
-  txHash?: string;
-  isEncrypted?: boolean;
-};
-
-export type ContextState = {
-  context: string;
-  version: number;
-  rootHash: string;
 };
 
 export type BiomeMember = { ens: string; pubkey: string };
@@ -61,52 +45,15 @@ async function get<T>(path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const r = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({ error: r.statusText }));
-    throw new Error((err as { error: string }).error ?? r.statusText);
-  }
-  return r.json() as Promise<T>;
-}
-
 export const api = {
   agents: {
     list: () => get<AgentInfo[]>("/agents"),
     get: (slug: string) => get<AgentInfo>(`/agents/${slug}`),
   },
-  quorum: {
-    runRound: (biomeName: string) =>
-      post<{ ok: boolean; message: string }>(`/quorum/${encodeURIComponent(biomeName)}/run`, {}),
-    streamUrl: (biomeName: string) =>
-      `${BASE}/quorum/${encodeURIComponent(biomeName)}/stream`,
-  },
   context: {
-    get: (biomeName: string) =>
-      get<ContextState>(`/biome/${encodeURIComponent(biomeName)}/context`),
-    set: (
-      biomeName: string,
-      context: string,
-      auth: { address: string; signature: string; ts: number },
-    ) =>
-      post<{ ok: boolean; version: number; rootHash: string }>(
-        `/biome/${encodeURIComponent(biomeName)}/context`,
-        { context, auth },
-      ),
     resolve: (biomeName: string) =>
-      get<BiomeResolveResult>(`/biome/${encodeURIComponent(biomeName)}/resolve`),
-  },
-  chatbot: {
-    sendMessage: (slug: string, text: string, sessionId: string) =>
-      post<{ userMessage: ChatMessage; agentMessage: ChatMessage }>(
-        `/chatbot/${slug}/message`,
-        { text, sessionId },
+      get<BiomeResolveResult>(
+        `/biome/${encodeURIComponent(biomeName)}/resolve`,
       ),
-    getLog: (slug: string, sessionId: string) =>
-      get<ChatMessage[]>(`/chatbot/${slug}/log?session=${sessionId}`),
   },
 };
