@@ -14,6 +14,7 @@ import { proxy0gRouter } from "./routes/proxy0g.js";
 import { registerRouter } from "./routes/register.js";
 import { contextRouter } from "./routes/context.js";
 import { bootQuorum } from "./quorum/index.js";
+import { bootChatbot } from "./chatbot/index.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const QUORUM_BIOME =
@@ -48,8 +49,16 @@ async function bootstrap() {
   } catch (err) {
     console.error("[boot] quorum boot failed:", (err as Error).message);
     console.error(
-      "       The HTTP server will still start, but no agents are listening.",
+      "       The HTTP server will still start, but no quorum agents are listening.",
     );
+  }
+
+  // Boot the chatbot runtime: the concierge agent that handles 1:1
+  // sealed DMs from any user.
+  try {
+    await bootChatbot();
+  } catch (err) {
+    console.error("[boot] chatbot boot failed:", (err as Error).message);
   }
 }
 
