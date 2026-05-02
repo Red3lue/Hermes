@@ -8,7 +8,8 @@
   "architect": {
     "ens": "architect.hermes.eth",
     "role": "quorum",
-    "displayName": "Architect"
+    "displayName": "Architect",
+    "tagline": "Designs systems first; weighs structure and clean abstractions."
   },
   "auditor": {
     "ens": "auditor.hermes.eth",
@@ -18,12 +19,14 @@
   "pragmatist": {
     "ens": "pragmatist.hermes.eth",
     "role": "quorum",
-    "displayName": "Pragmatist"
+    "displayName": "Pragmatist",
+    "tagline": "Ship-it focus; argues for the smallest viable thing."
   },
   "skeptic": {
     "ens": "skeptic.hermes.eth",
     "role": "quorum",
-    "displayName": "Skeptic"
+    "displayName": "Skeptic",
+    "tagline": "Plays devil's advocate; surfaces hidden assumptions."
   },
   "futurist": {
     "ens": "futurist.hermes.eth",
@@ -34,11 +37,11 @@
     "ens": "coordinator.hermes.eth",
     "role": "coordinator",
     "displayName": "Coordinator",
-    "tagline": "Orchestrates the quorum, posts stage updates on chain"
+    "tagline": "Routes your sealed request, gathers verdicts, writes the synthesis."
   },
   "reporter": {
     "ens": "reporter.hermes.eth",
-    "role": "reporter",
+    "role": "inactive",
     "displayName": "Reporter",
     "tagline": "Synthesises member verdicts into the final report"
   },

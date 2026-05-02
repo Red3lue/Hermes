@@ -1,3 +1,4 @@
+import { callLLM } from "../llm.js";
 import type { AgentDef } from "../registry.js";
 import type { RoleHandler, RuntimeContext } from "../runtime/agentRuntime.js";
 import { decodeBody, encodeBody, type QuorumBody } from "./envelopes.js";
@@ -7,9 +8,9 @@ const ROUND_TIMEOUT_MS = 90_000;
 type RoundState = {
   contextId: string; // === requestId
   contextMarkdown: string;
-  requesterEns: string; // user ENS that submitted via DM
+  requesterEns: string;
   startedAt: number;
-  members: AgentDef[]; // dispatch list
+  members: AgentDef[];
   verdicts: Map<
     string,
     {
@@ -19,66 +20,91 @@ type RoundState = {
       verdict: "agree" | "disagree" | "abstain";
     }
   >;
-  tallied: boolean;
-  bundleSent: boolean;
+  finalized: boolean;
   finalSent: boolean;
 };
 
 export type CoordinatorOpts = {
   biomeName: string;
-  members: AgentDef[]; // quorum members (currently 3: architect, skeptic, pragmatist)
-  reporter: AgentDef;
+  members: AgentDef[];
 };
 
 export function makeCoordinatorHandler(
   agent: AgentDef,
   opts: CoordinatorOpts,
 ): RoleHandler {
-  // Per-contextId state
   const rounds = new Map<string, RoundState>();
 
-  async function maybeFinalizeRound(
+  async function synthesizeAndReply(
     state: RoundState,
     ctx: RuntimeContext,
     reason: "all-replied" | "timeout",
   ) {
-    if (state.tallied) return;
+    if (state.finalized) return;
+    state.finalized = true;
 
-    const counts = { agree: 0, disagree: 0, abstain: 0 } as Record<
+    const tally = { agree: 0, disagree: 0, abstain: 0 } as Record<
       string,
       number
     >;
-    for (const v of state.verdicts.values()) counts[v.verdict]++;
+    for (const v of state.verdicts.values()) tally[v.verdict]++;
 
-    const tallyBody: QuorumBody = {
-      kind: "stage",
-      stage: "tally",
-      contextId: state.contextId,
-      meta: { reason, counts, replies: state.verdicts.size },
-    };
-    await ctx.broadcast(opts.biomeName, encodeBody(tallyBody));
-    state.tallied = true;
     console.log(
-      `[coordinator] ${state.contextId.slice(0, 8)} tallied: ${JSON.stringify(counts)} (${reason})`,
+      `[coordinator] ${state.contextId.slice(0, 8)} synthesizing: ${JSON.stringify(tally)} (${reason})`,
     );
 
-    // Send bundle to reporter
-    if (state.bundleSent) return;
-    state.bundleSent = true;
-    const bundleBody: QuorumBody = {
-      kind: "bundle",
-      contextId: state.contextId,
-      contextMarkdown: state.contextMarkdown,
-      verdicts: [...state.verdicts.values()],
+    const memberBlock = [...state.verdicts.values()]
+      .map(
+        (v) =>
+          `### ${v.slug} — VERDICT: ${v.verdict}\n${v.text.replace(/VERDICT:.*$/i, "").trim()}`,
+      )
+      .join("\n\n");
+
+    const userPrompt = [
+      `## Original question\n${state.contextMarkdown}`,
+      `## Member responses\n${memberBlock || "(no responses received)"}`,
+      `## Tally\nagree: ${tally.agree}, disagree: ${tally.disagree}, abstain: ${tally.abstain}`,
+      "Now produce the final synthesis report following your persona.",
+    ].join("\n\n");
+
+    let markdown: string;
+    try {
+      markdown = await callLLM({
+        persona: agent.persona,
+        history: [],
+        userPrompt,
+        maxTokens: 600,
+      });
+    } catch (err) {
+      console.warn(
+        `[coordinator] LLM synthesis failed:`,
+        (err as Error).message,
+      );
+      markdown =
+        `# Quorum result\n\nThe quorum returned **${tally.agree} agree / ${tally.disagree} disagree / ${tally.abstain} abstain** ` +
+        `on:\n\n> ${state.contextMarkdown}\n\n(Synthesis LLM unavailable; raw verdicts:)\n\n${memberBlock}`;
+    }
+
+    if (state.finalSent) return;
+    state.finalSent = true;
+
+    const finalBody: QuorumBody = {
+      kind: "final-response",
+      requestId: state.contextId,
+      markdown,
+      tally,
     };
     try {
-      await ctx.sendDM(opts.reporter.ens, encodeBody(bundleBody));
+      await ctx.sendDM(state.requesterEns, encodeBody(finalBody));
       console.log(
-        `[coordinator] ${state.contextId.slice(0, 8)} bundle sent to reporter`,
+        `[coordinator] ${state.contextId.slice(0, 8)} final-response → ${state.requesterEns}`,
       );
     } catch (err) {
-      console.warn(`[coordinator] bundle send failed:`, (err as Error).message);
-      state.bundleSent = false;
+      state.finalSent = false;
+      console.warn(
+        `[coordinator] final-response send failed:`,
+        (err as Error).message,
+      );
     }
   }
 
@@ -97,8 +123,7 @@ export function makeCoordinatorHandler(
       startedAt: Date.now(),
       members: opts.members,
       verdicts: new Map(),
-      tallied: false,
-      bundleSent: false,
+      finalized: false,
       finalSent: false,
     };
     rounds.set(requestId, state);
@@ -106,7 +131,7 @@ export function makeCoordinatorHandler(
       `[coordinator] new round ${requestId.slice(0, 8)} from ${requesterEns}`,
     );
 
-    // Broadcast started stage on the biome (member-visible only)
+    // Stage broadcast on the biome (member-visible only).
     const startedBody: QuorumBody = {
       kind: "stage",
       stage: "started",
@@ -118,7 +143,8 @@ export function makeCoordinatorHandler(
     };
     await ctx.broadcast(opts.biomeName, encodeBody(startedBody));
 
-    // Fan out deliberate to each member (DM, encrypted to member pubkey)
+    // Fan out deliberate DMs to each member (sequential — shared deployer
+    // wallet collides on parallel sends).
     for (const member of opts.members) {
       const delibBody: QuorumBody = {
         kind: "deliberate",
@@ -136,14 +162,14 @@ export function makeCoordinatorHandler(
       }
     }
 
-    // Schedule timeout
+    // Round timeout — finalize with whatever verdicts we have.
     setTimeout(() => {
       const cur = rounds.get(requestId);
-      if (cur && !cur.tallied) {
+      if (cur && !cur.finalized) {
         console.log(
           `[coordinator] ${requestId.slice(0, 8)} timeout reached`,
         );
-        maybeFinalizeRound(cur, ctx, "timeout");
+        synthesizeAndReply(cur, ctx, "timeout");
       }
     }, ROUND_TIMEOUT_MS);
   }
@@ -171,7 +197,7 @@ export function makeCoordinatorHandler(
       `[coordinator] ${body.contextId.slice(0, 8)} verdict from ${body.slug}: ${body.verdict} (${state.verdicts.size}/${state.members.length})`,
     );
 
-    // Broadcast member-replied stage
+    // Stage broadcast (member-visible only).
     const stageBody: QuorumBody = {
       kind: "stage",
       stage: "member-replied",
@@ -181,58 +207,20 @@ export function makeCoordinatorHandler(
     await ctx.broadcast(opts.biomeName, encodeBody(stageBody));
 
     if (state.verdicts.size >= state.members.length) {
-      await maybeFinalizeRound(state, ctx, "all-replied");
-    }
-  }
-
-  async function handleReport(
-    body: Extract<QuorumBody, { kind: "report" }>,
-    ctx: RuntimeContext,
-  ) {
-    const state = rounds.get(body.contextId);
-    if (!state) return; // not our round
-    if (state.finalSent) return;
-    state.finalSent = true;
-
-    const finalBody: QuorumBody = {
-      kind: "final-response",
-      requestId: body.contextId,
-      markdown: body.markdown,
-      tally: body.tally,
-    };
-    try {
-      await ctx.sendDM(state.requesterEns, encodeBody(finalBody));
-      console.log(
-        `[coordinator] ${body.contextId.slice(0, 8)} final-response → ${state.requesterEns}`,
-      );
-    } catch (err) {
-      state.finalSent = false;
-      console.warn(
-        `[coordinator] final-response send failed:`,
-        (err as Error).message,
-      );
+      await synthesizeAndReply(state, ctx, "all-replied");
     }
   }
 
   return {
     subscribedBiomes: [opts.biomeName],
-    onBiome: async (msg, ctx) => {
-      const body = decodeBody(msg.text);
-      if (!body) return;
-      // The coordinator listens to biome broadcasts only to pick up the
-      // reporter's `report` and trigger the final-response DM to the user.
-      if (body.kind === "report") {
-        await handleReport(body, ctx);
-      }
-      // All other biome broadcasts are stages emitted by the coordinator
-      // itself or read-only telemetry; ignore.
+    onBiome: async () => {
+      // Coordinator no longer reacts to biome broadcasts. It still
+      // subscribes so its policy is correct; ignore the messages.
     },
     onDM: async (msg, ctx) => {
       const body = decodeBody(msg.text);
       if (!body) return;
       if (body.kind === "request") {
-        // Public user → coordinator. msg.from is the user's ENS, sealed
-        // for the coordinator's pubkey by the SDK on the user's side.
         await startRound(body.requestId, body.markdown, msg.from, ctx);
       } else if (body.kind === "verdict") {
         await handleVerdict(body, msg.from, ctx);
