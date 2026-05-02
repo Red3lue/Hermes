@@ -4,8 +4,8 @@ const demos = [
   {
     to: "/demos/quorum",
     title: "Quorum",
-    subtitle: "5 agents · 1 encrypted room · watch them deliberate",
-    desc: "Five LLM-driven agents with distinct personas deliberate in an encrypted BIOME. Each message is signed, each tx appears on Sepolia. The FE reads chain + 0G directly — no backend.",
+    subtitle: "Ask the swarm · sealed DM · public access",
+    desc: "Any registered .users.hermes.eth subdomain can submit a sealed request to the coordinator. Coordinator routes it to its 3-agent biome, collects verdicts, replies to you on chain. No HTTP — every leg is HermesInbox + 0G.",
     badge: "flagship",
   },
   {

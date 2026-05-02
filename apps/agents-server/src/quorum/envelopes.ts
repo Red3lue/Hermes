@@ -10,6 +10,18 @@ export type QuorumStage =
 
 export type QuorumBody =
   | {
+      kind: "request";
+      requestId: string; // user-generated uuid; reused as contextId internally
+      markdown: string;
+      targetBiome?: string; // reserved for multi-biome routing; demo always omits
+    }
+  | {
+      kind: "final-response";
+      requestId: string;
+      markdown: string;
+      tally: Record<string, number>;
+    }
+  | {
       kind: "context";
       biomeName: string;
       markdown: string;

@@ -10,6 +10,18 @@ export type QuorumStage =
 
 export type QuorumBody =
   | {
+      kind: "request";
+      requestId: string;
+      markdown: string;
+      targetBiome?: string;
+    }
+  | {
+      kind: "final-response";
+      requestId: string;
+      markdown: string;
+      tally: Record<string, number>;
+    }
+  | {
       kind: "context";
       biomeName: string;
       markdown: string;

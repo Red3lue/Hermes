@@ -118,13 +118,20 @@ export async function spawnAgentRuntime(
   async function tick() {
     if (stopped) return;
     try {
+      // Snapshot the chain head once per tick. We'll advance every cursor
+      // (DM + each subscribed biome) past whatever range we just queried,
+      // so the next tick only looks at strictly-newer blocks. This is the
+      // hotfix to stop re-downloading the same N blobs every 5s when the
+      // cursor stays pinned to a block that contains old logs.
+      const head = await publicClient.getBlockNumber();
+
       // 1. Fetch DMs since lastDmBlock
       if (handler.onDM) {
-        const msgs = await hermes.fetchInbox(lastDmBlock);
+        const sinceDm = lastDmBlock;
+        const msgs = await hermes.fetchInbox(sinceDm);
         for (const m of msgs) {
           if (seenRoots.has(m.rootHash)) continue;
           seenRoots.add(m.rootHash);
-          if (m.blockNumber > lastDmBlock) lastDmBlock = m.blockNumber;
           // Skip messages from self (shouldn't happen for DMs but defensive)
           if (m.from === agent.ens) continue;
           try {
@@ -136,6 +143,10 @@ export async function spawnAgentRuntime(
             );
           }
         }
+        // Advance past the range we just scanned so the next tick won't
+        // re-fetch the same logs/blobs. `head + 1n` is the smallest block
+        // we have not yet looked at.
+        if (head >= sinceDm) lastDmBlock = head + 1n;
       }
 
       // 2. Fetch biome broadcasts for each subscribed biome
@@ -146,8 +157,6 @@ export async function spawnAgentRuntime(
           for (const m of msgs) {
             if (seenRoots.has(m.rootHash)) continue;
             seenRoots.add(m.rootHash);
-            if (m.blockNumber > since)
-              lastBiomeBlock.set(biomeName, m.blockNumber);
             // Skip self-broadcasts (coordinator hearing its own stage events)
             if (m.from === agent.ens) continue;
             try {
@@ -159,6 +168,7 @@ export async function spawnAgentRuntime(
               );
             }
           }
+          if (head >= since) lastBiomeBlock.set(biomeName, head + 1n);
         }
       }
     } catch (err) {

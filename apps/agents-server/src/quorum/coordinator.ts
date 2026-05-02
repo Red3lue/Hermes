@@ -5,9 +5,9 @@ import { decodeBody, encodeBody, type QuorumBody } from "./envelopes.js";
 const ROUND_TIMEOUT_MS = 90_000;
 
 type RoundState = {
-  contextId: string;
+  contextId: string; // === requestId
   contextMarkdown: string;
-  requesterEns: string;
+  requesterEns: string; // user ENS that submitted via DM
   startedAt: number;
   members: AgentDef[]; // dispatch list
   verdicts: Map<
@@ -21,11 +21,12 @@ type RoundState = {
   >;
   tallied: boolean;
   bundleSent: boolean;
+  finalSent: boolean;
 };
 
 export type CoordinatorOpts = {
   biomeName: string;
-  members: AgentDef[]; // 5 quorum members
+  members: AgentDef[]; // quorum members (currently 3: architect, skeptic, pragmatist)
   reporter: AgentDef;
 };
 
@@ -81,49 +82,48 @@ export function makeCoordinatorHandler(
     }
   }
 
-  async function handleContext(
-    body: Extract<QuorumBody, { kind: "context" }>,
-    senderEns: string,
+  async function startRound(
+    requestId: string,
+    markdown: string,
+    requesterEns: string,
     ctx: RuntimeContext,
   ) {
-    if (rounds.has(body.contextId)) {
-      // already processing
-      return;
-    }
+    if (rounds.has(requestId)) return;
 
     const state: RoundState = {
-      contextId: body.contextId,
-      contextMarkdown: body.markdown,
-      requesterEns: senderEns,
+      contextId: requestId,
+      contextMarkdown: markdown,
+      requesterEns,
       startedAt: Date.now(),
       members: opts.members,
       verdicts: new Map(),
       tallied: false,
       bundleSent: false,
+      finalSent: false,
     };
-    rounds.set(body.contextId, state);
+    rounds.set(requestId, state);
     console.log(
-      `[coordinator] new round ${body.contextId.slice(0, 8)} from ${senderEns}`,
+      `[coordinator] new round ${requestId.slice(0, 8)} from ${requesterEns}`,
     );
 
-    // Broadcast started stage
+    // Broadcast started stage on the biome (member-visible only)
     const startedBody: QuorumBody = {
       kind: "stage",
       stage: "started",
-      contextId: body.contextId,
+      contextId: requestId,
       meta: {
-        requesterEns: senderEns,
+        requesterEns,
         members: opts.members.map((m) => m.ens),
       },
     };
     await ctx.broadcast(opts.biomeName, encodeBody(startedBody));
 
-    // Fan out deliberate to each member
+    // Fan out deliberate to each member (DM, encrypted to member pubkey)
     for (const member of opts.members) {
       const delibBody: QuorumBody = {
         kind: "deliberate",
-        contextId: body.contextId,
-        contextMarkdown: body.markdown,
+        contextId: requestId,
+        contextMarkdown: markdown,
       };
       try {
         await ctx.sendDM(member.ens, encodeBody(delibBody));
@@ -138,10 +138,10 @@ export function makeCoordinatorHandler(
 
     // Schedule timeout
     setTimeout(() => {
-      const cur = rounds.get(body.contextId);
+      const cur = rounds.get(requestId);
       if (cur && !cur.tallied) {
         console.log(
-          `[coordinator] ${body.contextId.slice(0, 8)} timeout reached`,
+          `[coordinator] ${requestId.slice(0, 8)} timeout reached`,
         );
         maybeFinalizeRound(cur, ctx, "timeout");
       }
@@ -185,20 +185,56 @@ export function makeCoordinatorHandler(
     }
   }
 
+  async function handleReport(
+    body: Extract<QuorumBody, { kind: "report" }>,
+    ctx: RuntimeContext,
+  ) {
+    const state = rounds.get(body.contextId);
+    if (!state) return; // not our round
+    if (state.finalSent) return;
+    state.finalSent = true;
+
+    const finalBody: QuorumBody = {
+      kind: "final-response",
+      requestId: body.contextId,
+      markdown: body.markdown,
+      tally: body.tally,
+    };
+    try {
+      await ctx.sendDM(state.requesterEns, encodeBody(finalBody));
+      console.log(
+        `[coordinator] ${body.contextId.slice(0, 8)} final-response → ${state.requesterEns}`,
+      );
+    } catch (err) {
+      state.finalSent = false;
+      console.warn(
+        `[coordinator] final-response send failed:`,
+        (err as Error).message,
+      );
+    }
+  }
+
   return {
     subscribedBiomes: [opts.biomeName],
     onBiome: async (msg, ctx) => {
       const body = decodeBody(msg.text);
       if (!body) return;
-      if (body.kind === "context") {
-        await handleContext(body, msg.from, ctx);
+      // The coordinator listens to biome broadcasts only to pick up the
+      // reporter's `report` and trigger the final-response DM to the user.
+      if (body.kind === "report") {
+        await handleReport(body, ctx);
       }
-      // Ignore other broadcast kinds (stage, report) — coordinator doesn't react
+      // All other biome broadcasts are stages emitted by the coordinator
+      // itself or read-only telemetry; ignore.
     },
     onDM: async (msg, ctx) => {
       const body = decodeBody(msg.text);
       if (!body) return;
-      if (body.kind === "verdict") {
+      if (body.kind === "request") {
+        // Public user → coordinator. msg.from is the user's ENS, sealed
+        // for the coordinator's pubkey by the SDK on the user's side.
+        await startRound(body.requestId, body.markdown, msg.from, ctx);
+      } else if (body.kind === "verdict") {
         await handleVerdict(body, msg.from, ctx);
       }
     },

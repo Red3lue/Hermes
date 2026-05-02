@@ -174,60 +174,18 @@ export function useQuorumOnChain(args: {
         let env;
         try {
           env = parseEnvelope(bytes);
-        } catch (e) {
-          env = null;
-        }
-
-        if (env) {
-          if (env.to !== biomeName || !env.biome) return;
-          const text = decryptBiomePayload(
-            env.ciphertext,
-            env.nonce,
-            biomeKey.current!,
-          );
-          const body = decodeBody(text);
-          if (!body) return;
-          ingest(body, env, log);
+        } catch {
           return;
         }
-
-        // Fallback: the blob may be raw JSON (plaintext QuorumBody). Try
-        // to parse and ingest as a context event. This supports demo flows
-        // where the FE uploaded a plain QuorumBody to /blob.
-        try {
-          const text = new TextDecoder().decode(bytes);
-          const maybe = JSON.parse(text) as { kind?: string } | null;
-          if (maybe && maybe.kind === "context") {
-            const body = decodeBody(text) as QuorumBody | null;
-            if (!body) return;
-            // synthesize minimal env-like object for ingest: set from to tx.from if available
-            let from = "public";
-            try {
-              const tx = await publicClient.getTransaction({
-                hash: log.transactionHash,
-              });
-              if (tx && tx.from) from = tx.from;
-            } catch {
-              /* ignore */
-            }
-            const syntheticEnv = {
-              to: biomeName,
-              biome: true,
-              ciphertext: text,
-              nonce: "",
-              ts: Math.floor(Date.now() / 1000),
-              from,
-            } as any;
-            ingest(body, syntheticEnv, log);
-            return;
-          }
-        } catch (e) {
-          // not JSON — fall through to generic warning
-        }
-
-        console.warn(
-          `[useQuorumOnChain] drop ${log.rootHash.slice(0, 10)}…: Unsupported envelope or payload`,
+        if (env.to !== biomeName || !env.biome) return;
+        const text = decryptBiomePayload(
+          env.ciphertext,
+          env.nonce,
+          biomeKey.current!,
         );
+        const body = decodeBody(text);
+        if (!body) return;
+        ingest(body, env, log);
       } catch (err) {
         console.warn(
           `[useQuorumOnChain] drop ${log.rootHash.slice(0, 10)}…:`,

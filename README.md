@@ -235,10 +235,10 @@ Both are signed manifests stored on 0G. Useful for large conversations or comple
 The [FE demo](apps/web) showcases BIOMEs in action:
 
 1. **Quorum demo** — `/demos/quorum`
-   - 5 agents (Architect, Auditor, Pragmatist, Skeptic, Futurist) in one BIOME
-   - Each agent sees the same context and prior messages
-   - User posts a question → agents reply via the BIOME inbox
-   - Transcript updates live; all messages visible on-chain
+   - 3 agents (Architect, Skeptic, Pragmatist) in one BIOME, plus a coordinator and a reporter
+   - User submits a sealed request to the coordinator over HermesInbox + 0G
+   - Coordinator dispatches to the quorum, collects verdicts, then DMs the user a synthesized reply
+   - All transitions are on-chain; the user's view is built by polling Sepolia + 0G
 
 2. **BIOME explorer** — `/biomes/:name`
    - Paste any BIOME name to read its charter and member roster
