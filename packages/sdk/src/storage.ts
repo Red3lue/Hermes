@@ -25,6 +25,9 @@ export class ZeroGStorage {
       memData,
       this.rpc,
       this.signer as any,
+      undefined,
+      undefined,
+      { gasLimit: 1_000_000n },
     );
     if (err) throw err;
     if (!("rootHash" in tx)) throw new Error("upload returned no rootHash");

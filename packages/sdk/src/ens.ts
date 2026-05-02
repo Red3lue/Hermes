@@ -5,9 +5,49 @@ import {
   getEnsResolver,
   type GetEnsTextReturnType,
 } from "viem/ens";
-import { type PublicClient } from "viem";
-import { setRecords } from "@ensdomains/ensjs/wallet";
+import {
+  namehash,
+  encodeFunctionData,
+  encodePacked,
+  type PublicClient,
+} from "viem";
 import { client as defaultClient } from "./config/config";
+
+// Minimal ENS PublicResolver ABI — only what we need for setting records.
+// Bypasses @ensdomains/ensjs/wallet which breaks under viem 2.x peer skew.
+const RESOLVER_ABI = [
+  {
+    type: "function",
+    name: "multicall",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "data", type: "bytes[]" }],
+    outputs: [{ name: "results", type: "bytes[]" }],
+  },
+  {
+    type: "function",
+    name: "setAddr",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "node", type: "bytes32" },
+      { name: "coinType", type: "uint256" },
+      { name: "a", type: "bytes" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "setText",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "node", type: "bytes32" },
+      { name: "key", type: "string" },
+      { name: "value", type: "string" },
+    ],
+    outputs: [],
+  },
+] as const;
+
+const COIN_TYPE_ETH = 60n;
 
 export type AgentRecords = {
   addr: `0x${string}`;
@@ -41,10 +81,25 @@ export async function resolveAgent(
   return { addr, pubkey, inbox };
 }
 
-// wallet must be created with addEnsContracts(chain) as its chain
-export async function setAgentRecords(
+export async function resolveBiomeRecords(
   name: string,
-  records: AgentRecords,
+  client: PublicClient,
+): Promise<{ root: `0x${string}`; version: number }> {
+  const normalizedName = normalize(name);
+  const [root, version] = await Promise.all([
+    getEnsText(client, { name: normalizedName, key: "biome.root" }),
+    getEnsText(client, { name: normalizedName, key: "biome.version" }),
+  ]);
+  if (!root || !version) {
+    throw new Error(`Missing biome ENS records for ${name}`);
+  }
+  return { root: root as `0x${string}`, version: Number(version) };
+}
+
+async function multicallResolver(
+  name: string,
+  texts: Array<{ key: string; value: string }>,
+  addr: `0x${string}` | undefined,
   publicClient: PublicClient,
   wallet: any,
 ): Promise<`0x${string}`> {
@@ -56,18 +111,113 @@ export async function setAgentRecords(
     throw new Error(`No resolver found for ENS name ${name}`);
   }
 
-  const hash = await setRecords(wallet, {
-    name: normalizedName,
-    resolverAddress,
+  const node = namehash(normalizedName);
+  const calls: `0x${string}`[] = [];
+  if (addr) {
+    calls.push(
+      encodeFunctionData({
+        abi: RESOLVER_ABI,
+        functionName: "setAddr",
+        args: [node, COIN_TYPE_ETH, encodePacked(["address"], [addr])],
+      }),
+    );
+  }
+  for (const t of texts) {
+    calls.push(
+      encodeFunctionData({
+        abi: RESOLVER_ABI,
+        functionName: "setText",
+        args: [node, t.key, t.value],
+      }),
+    );
+  }
+
+  const account = wallet.account ?? wallet.account?.address;
+  if (!account) {
+    throw new Error("wallet has no account; pass a WalletClient with an account");
+  }
+
+  const hash = (await wallet.writeContract({
+    address: resolverAddress,
+    abi: RESOLVER_ABI,
+    functionName: "multicall",
+    args: [calls],
     account: wallet.account,
-    coins: [{ coin: "ETH", value: records.addr }],
-    texts: [
+    chain: wallet.chain,
+  })) as `0x${string}`;
+
+  await publicClient.waitForTransactionReceipt({ hash });
+  return hash;
+}
+
+export async function setBiomeRecords(
+  name: string,
+  root: `0x${string}`,
+  version: number,
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  return multicallResolver(
+    name,
+    [
+      { key: "biome.root", value: root },
+      { key: "biome.version", value: String(version) },
+    ],
+    undefined,
+    publicClient,
+    wallet,
+  );
+}
+
+/** Set the agent's `hermes.anima` text record to a 0G rootHash. Caller
+ * must own the ENS subname. */
+export async function setAnimaRecord(
+  ens: string,
+  root: `0x${string}`,
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  return multicallResolver(
+    ens,
+    [{ key: "hermes.anima", value: root }],
+    undefined,
+    publicClient,
+    wallet,
+  );
+}
+
+/** Set the biome's `biome.animus` text record to a 0G rootHash. Caller
+ * must own the biome ENS subname. */
+export async function setAnimusRecord(
+  biomeName: string,
+  root: `0x${string}`,
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  return multicallResolver(
+    biomeName,
+    [{ key: "biome.animus", value: root }],
+    undefined,
+    publicClient,
+    wallet,
+  );
+}
+
+// wallet must be created with addEnsContracts(chain) as its chain
+export async function setAgentRecords(
+  name: string,
+  records: AgentRecords,
+  publicClient: PublicClient,
+  wallet: any,
+): Promise<`0x${string}`> {
+  return multicallResolver(
+    name,
+    [
       { key: "hermes.pubkey", value: records.pubkey },
       { key: "hermes.inbox", value: records.inbox },
     ],
-  });
-
-  // wait for inclusion so subsequent resolveAgent() reads see the new state
-  await publicClient.waitForTransactionReceipt({ hash });
-  return hash;
+    records.addr,
+    publicClient,
+    wallet,
+  );
 }

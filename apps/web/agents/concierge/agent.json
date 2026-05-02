@@ -1,0 +1,10 @@
+{
+  "ens": "concierge.hermes.eth",
+  "address": "0x9F36F2581A4f5773cE1B7E25Bc2F83b1b3cFAC06",
+  "roles": [
+    "chatbot"
+  ],
+  "x25519PubKey": "UOet9Ox8z+wW4xJdkeILHIdoctAvcfZcWP3jZRyE5wc=",
+  "ensSubnameRegistered": true,
+  "x25519Version": 1
+}

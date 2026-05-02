@@ -1,0 +1,10 @@
+{
+  "ens": "coordinator.hermes.eth",
+  "address": "0x9F36F2581A4f5773cE1B7E25Bc2F83b1b3cFAC06",
+  "roles": [
+    "coordinator"
+  ],
+  "x25519PubKey": "dYshZ1poWP6DJ3DXwWtyXUULRp2u8TZFVt33KxSDuQY=",
+  "ensSubnameRegistered": true,
+  "x25519Version": 7
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@hermes/agents-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "seed-agents": "tsx src/seed-agents.ts",
+    "publish-biome": "tsx src/publish-biome.ts",
+    "register-test": "tsx src/scripts/register-test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@ensdomains/ensjs": "^4.2.2",
+    "@hermes/sdk": "workspace:*",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "viem": "^2.21.48"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -66,20 +66,50 @@ export async function replyToInbox(
   });
 }
 
+// Public RPCs commonly cap eth_getLogs at 50k blocks. Chunk requests to stay
+// under that cap and walk back from `latest` so a fresh demo finds recent logs
+// without scanning the whole chain.
+const LOG_CHUNK_SIZE = 9_000n;
+const DEFAULT_LOOKBACK = 200_000n;
+
+async function getLogsChunked(
+  cfg: InboxConfig,
+  args: {
+    event: typeof MESSAGE_EVENT;
+    args: Record<string, unknown>;
+    fromBlock: bigint;
+  },
+): Promise<InboxMessage[]> {
+  const latest = await cfg.publicClient.getBlockNumber();
+  let from = args.fromBlock;
+  if (from === 0n && latest > DEFAULT_LOOKBACK) from = latest - DEFAULT_LOOKBACK;
+
+  const out: InboxMessage[] = [];
+  while (from <= latest) {
+    const to = from + LOG_CHUNK_SIZE - 1n > latest ? latest : from + LOG_CHUNK_SIZE - 1n;
+    const logs = await cfg.publicClient.getLogs({
+      address: cfg.contract,
+      event: args.event,
+      args: args.args as never,
+      fromBlock: from,
+      toBlock: to,
+    });
+    for (const log of logs) out.push(toInboxMessage(log as never));
+    from = to + 1n;
+  }
+  return out;
+}
+
 export async function readInbox(
   cfg: InboxConfig,
   myName: string,
   fromBlock: bigint = 0n,
 ): Promise<InboxMessage[]> {
-  const logs = await cfg.publicClient.getLogs({
-    address: cfg.contract,
+  return getLogsChunked(cfg, {
     event: MESSAGE_EVENT,
     args: { toNode: namehash(myName) },
     fromBlock,
-    toBlock: "latest",
   });
-
-  return logs.map(toInboxMessage);
 }
 
 export async function readReplies(
@@ -87,15 +117,11 @@ export async function readReplies(
   parentRootHash: `0x${string}`,
   fromBlock: bigint = 0n,
 ): Promise<InboxMessage[]> {
-  const logs = await cfg.publicClient.getLogs({
-    address: cfg.contract,
+  return getLogsChunked(cfg, {
     event: MESSAGE_EVENT,
     args: { replyTo: parentRootHash },
     fromBlock,
-    toBlock: "latest",
   });
-
-  return logs.map(toInboxMessage);
 }
 
 function toInboxMessage(log: {

@@ -1,0 +1,49 @@
+{
+  "concierge": {
+    "ens": "concierge.hermes.eth",
+    "role": "chatbot",
+    "displayName": "Concierge",
+    "tagline": "Confidential 1:1 assistant"
+  },
+  "architect": {
+    "ens": "architect.hermes.eth",
+    "role": "quorum",
+    "displayName": "Architect",
+    "tagline": "Designs systems first; weighs structure and clean abstractions."
+  },
+  "auditor": {
+    "ens": "auditor.hermes.eth",
+    "role": "inactive",
+    "displayName": "Auditor"
+  },
+  "pragmatist": {
+    "ens": "pragmatist.hermes.eth",
+    "role": "quorum",
+    "displayName": "Pragmatist",
+    "tagline": "Ship-it focus; argues for the smallest viable thing."
+  },
+  "skeptic": {
+    "ens": "skeptic.hermes.eth",
+    "role": "quorum",
+    "displayName": "Skeptic",
+    "tagline": "Plays devil's advocate; surfaces hidden assumptions."
+  },
+  "futurist": {
+    "ens": "futurist.hermes.eth",
+    "role": "inactive",
+    "displayName": "Futurist"
+  },
+  "coordinator": {
+    "ens": "coordinator.hermes.eth",
+    "role": "coordinator",
+    "displayName": "Coordinator",
+    "tagline": "Routes your sealed request, gathers verdicts, writes the synthesis."
+  },
+  "reporter": {
+    "ens": "reporter.hermes.eth",
+    "role": "inactive",
+    "displayName": "Reporter",
+    "tagline": "Synthesises member verdicts into the final report"
+  },
+  "demoBiome": { "ens": "quorumv2.biomes.hermes.eth" }
+}
