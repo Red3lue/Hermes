@@ -7,7 +7,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "seed-agents": "tsx src/seed-agents.ts"
+    "seed-agents": "tsx src/seed-agents.ts",
+    "publish-biome": "tsx src/publish-biome.ts",
+    "register-test": "tsx src/scripts/register-test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",

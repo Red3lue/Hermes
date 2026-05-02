@@ -14,6 +14,7 @@ import { quorumRouter } from "./routes/quorum.js";
 import { contextRouter } from "./routes/context.js";
 import { chatbotRouter } from "./routes/chatbot.js";
 import { proxy0gRouter } from "./routes/proxy0g.js";
+import { registerRouter } from "./routes/register.js";
 import { getDefaultContext } from "./registry.js";
 import { getStore } from "./quorum-store.js";
 
@@ -35,6 +36,7 @@ app.use("/quorum", quorumRouter);
 app.use("/biome", contextRouter);
 app.use("/chatbot", chatbotRouter);
 app.use(proxy0gRouter);
+app.use(registerRouter);
 
 // Seed in-memory state with default context on boot
 function bootstrap() {

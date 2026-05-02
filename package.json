@@ -9,6 +9,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "seed-agents": "pnpm --filter @hermes/agents-server seed-agents",
+    "publish-biome": "pnpm --filter @hermes/agents-server publish-biome",
     "spike:0g": "tsx scripts/spike-0g.ts",
     "spike:ens": "tsx scripts/spike-ens.ts"
   },
