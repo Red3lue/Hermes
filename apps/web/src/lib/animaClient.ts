@@ -1,4 +1,5 @@
 import type { WalletClient } from "viem";
+import { getEnsText, normalize } from "viem/ens";
 import {
   signEIP191,
   animaSigningPayload,
@@ -6,12 +7,19 @@ import {
   setAnimaRecord,
   setAnimusRecord,
   encryptBiomePayload,
+  decryptBiomePayload,
+  verifyAnima,
+  verifyAnimus,
+  resolveAgent,
+  ANIMA_TEXT_KEY,
+  ANIMUS_TEXT_KEY,
   type AnimaDoc,
   type AnimusDoc,
   type UnsignedAnimaDoc,
   type UnsignedAnimusDoc,
 } from "@hermes/sdk";
 import { publicClient } from "./chainConfig";
+import { downloadBlob } from "./browserStorage";
 
 const BASE = import.meta.env.VITE_AGENTS_SERVER_URL ?? "http://localhost:8787";
 
@@ -37,6 +45,70 @@ async function uploadViaProxy(bytes: Uint8Array): Promise<`0x${string}`> {
   if (!r.ok) throw new Error(`proxy upload → ${r.status}`);
   const j = (await r.json()) as { rootHash: `0x${string}` };
   return j.rootHash;
+}
+
+/** FE-side resolver for an agent's Anima. Reads ENS, fetches blob via the
+ * 0G download path, verifies the signature against the ENS-resolved owner
+ * address. Returns null if no record set. */
+export async function resolveAnimaFE(ens: string): Promise<{
+  doc: AnimaDoc;
+  root: `0x${string}`;
+} | null> {
+  const root = (await getEnsText(publicClient, {
+    name: normalize(ens),
+    key: ANIMA_TEXT_KEY,
+  })) as `0x${string}` | null;
+  if (!root) return null;
+
+  const bytes = await downloadBlob(root);
+  const doc = JSON.parse(new TextDecoder().decode(bytes)) as AnimaDoc;
+  const agent = await resolveAgent(ens, publicClient);
+  const ok = await verifyAnima(doc, agent.addr);
+  if (!ok) throw new Error(`anima signature invalid for ${ens}`);
+  return { doc, root };
+}
+
+/** FE-side resolver for a biome's Animus. Reads ENS, fetches blob,
+ * verifies sig, decrypts with K. K must be unwrapped on the caller side
+ * (member's private key + biome doc wrap). */
+export async function resolveAnimusFE(
+  biomeName: string,
+  K: Uint8Array,
+): Promise<{
+  doc: AnimusDoc;
+  content: string;
+  root: `0x${string}`;
+} | null> {
+  const root = (await getEnsText(publicClient, {
+    name: normalize(biomeName),
+    key: ANIMUS_TEXT_KEY,
+  })) as `0x${string}` | null;
+  if (!root) return null;
+
+  const bytes = await downloadBlob(root);
+  const doc = JSON.parse(new TextDecoder().decode(bytes)) as AnimusDoc;
+  const sigOk = await verifyAnimus(doc, doc.ownerAddr);
+  if (!sigOk) throw new Error(`animus signature invalid for ${biomeName}`);
+  const content = decryptBiomePayload(doc.ciphertext, doc.nonce, K);
+  return { doc, content, root };
+}
+
+/** FE-side: read just the Animus rootHash and metadata without decrypting.
+ * Useful for the "encrypted, click decrypt" affordance. */
+export async function peekAnimusFE(biomeName: string): Promise<{
+  doc: AnimusDoc;
+  root: `0x${string}`;
+} | null> {
+  const root = (await getEnsText(publicClient, {
+    name: normalize(biomeName),
+    key: ANIMUS_TEXT_KEY,
+  })) as `0x${string}` | null;
+  if (!root) return null;
+  const bytes = await downloadBlob(root);
+  const doc = JSON.parse(new TextDecoder().decode(bytes)) as AnimusDoc;
+  const sigOk = await verifyAnimus(doc, doc.ownerAddr);
+  if (!sigOk) throw new Error(`animus signature invalid for ${biomeName}`);
+  return { doc, root };
 }
 
 /** Publish a new Anima for an agent the user owns. Two on-chain signatures:

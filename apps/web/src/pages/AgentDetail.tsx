@@ -7,6 +7,7 @@ import { useKnownAgents } from "@/hooks/useKnownAgents";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { OnChainPanel } from "@/components/OnChainPanel";
 import { WalletButton } from "@/components/WalletButton";
+import { AnimaPanel } from "@/components/AnimaPanel";
 import { publicClient } from "@/lib/chainConfig";
 
 export default function AgentDetail() {
@@ -105,6 +106,11 @@ export default function AgentDetail() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Anima panel */}
+          <div className="flex-shrink-0 px-4 py-4 border-b border-gray-800">
+            {ens && <AnimaPanel ens={ens} />}
           </div>
 
           {/* Inbox events */}
