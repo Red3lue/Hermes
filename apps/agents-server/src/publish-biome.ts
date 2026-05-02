@@ -79,10 +79,9 @@ const deployerWallet = createWalletClient({
   transport: http(rpcUrl),
 });
 
-const AGENTS_DIR = resolve(
-  fileURLToPath(new URL(".", import.meta.url)),
-  "../../web/agents",
-);
+const AGENTS_DIR =
+  process.env.AGENTS_DIR ??
+  resolve(fileURLToPath(new URL(".", import.meta.url)), "../../web/agents");
 
 type AgentJson = {
   ens: string;

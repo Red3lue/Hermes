@@ -6,8 +6,8 @@ import {
   encryptMessage,
   signEIP191,
   verifyEIP191,
-} from "./crypto";
-import { canonicalize } from "./envelope";
+} from "./crypto.js";
+import { canonicalize } from "./envelope.js";
 
 const { encodeBase64, decodeBase64, decodeUTF8, encodeUTF8 } = naclUtil;
 

@@ -14,15 +14,15 @@
 
 import { type PublicClient, type WalletClient, type Account } from "viem";
 import { getEnsText, normalize } from "viem/ens";
-import { canonicalize } from "./envelope";
+import { canonicalize } from "./envelope.js";
 import {
   signEIP191,
   verifyEIP191,
   encryptMessage,
   decryptMessage,
-} from "./crypto";
-import { resolveAgent } from "./ens";
-import { ZeroGStorage } from "./storage";
+} from "./crypto.js";
+import { resolveAgent } from "./ens.js";
+import { ZeroGStorage } from "./storage.js";
 
 export const ANIMA_TEXT_KEY = "hermes.anima";
 export const ANIMA_VERSION = 1 as const;

@@ -1,0 +1,52 @@
+# Build context for both Dockerfiles is the monorepo root. Keep it tight.
+
+# Always exclude
+**/node_modules
+**/dist
+**/.turbo
+**/.cache
+
+# Local environment & secrets — must NEVER end up in an image
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Keystores / runtime state (deterministically rebuilt anyway)
+**/.hermes-runtime
+
+# Editor / OS clutter
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# Git internals
+.git
+.gitignore
+.github
+
+# Foundry artefacts (we don't build contracts in Docker)
+packages/contracts/out
+packages/contracts/cache
+packages/contracts/lib
+packages/contracts/broadcast
+
+# 0G starter kit reference material — not part of any image
+0g-storage-ts-starter-kit
+
+# Examples — pure references, not built into images
+examples
+
+# Top-level docs the images don't need
+*.md
+PROJECT.md
+plan.md
+TODO.md
+NOTES.md
+
+# Vite outputs / logs
+**/vite.log
+*.log
+
+# pnpm cache that occasionally leaks
+.pnpm-store

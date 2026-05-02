@@ -12,7 +12,11 @@ import type { AgentDef } from "../registry.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 // Per-agent keystore files live next to the source so dev/test reuse them
 // across reboots without re-deriving (which is cheap, but spares wallet work).
-const KEYSTORE_DIR = resolve(__dirname, "../../.hermes-runtime");
+// Containerised builds set HERMES_RUNTIME_DIR to a writable path (e.g.
+// /app/.hermes-runtime) since the in-source path doesn't exist after
+// `pnpm deploy`.
+const KEYSTORE_DIR =
+  process.env.HERMES_RUNTIME_DIR ?? resolve(__dirname, "../../.hermes-runtime");
 
 function keystorePath(slug: string): string {
   return join(KEYSTORE_DIR, `${slug}.json`);

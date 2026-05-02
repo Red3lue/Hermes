@@ -1,0 +1,37 @@
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # SPA fallback — every client-side route falls through to index.html
+    # so React Router can take over. Static asset 404s still 404.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Long-lived cache on hashed asset filenames (vite emits content-hashes).
+    location ~* \.(?:js|css|woff2?|svg|png|jpg|jpeg|gif|ico|webp|avif)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # Don't cache index.html itself — it references the latest hashed bundle.
+    location = /index.html {
+        expires off;
+        add_header Cache-Control "no-store";
+    }
+
+    # Tighten security a bit. Reown / WalletConnect open popups, so frame-ancestors stays loose.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    # Surface the version commit if you bake it in via VITE_COMMIT_SHA, useful
+    # for sanity-checking which build is live.
+    location = /healthz {
+        access_log off;
+        return 200 "ok\n";
+        add_header Content-Type text/plain;
+    }
+}

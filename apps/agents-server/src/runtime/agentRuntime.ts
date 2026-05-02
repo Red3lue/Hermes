@@ -106,7 +106,7 @@ export async function spawnAgentRuntime(
         ? deployerKey
         : `0x${deployerKey}`) as `0x${string}`,
     },
-    keystorePath: `.hermes-runtime/${agent.slug}.json`,
+    keystorePath: `${process.env.HERMES_RUNTIME_DIR ?? ".hermes-runtime"}/${agent.slug}.json`,
   });
 
   // For demo: allow coordinator to initiate public conversations so it can

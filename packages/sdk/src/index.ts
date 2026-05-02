@@ -3,7 +3,7 @@ export {
   resolveAgent,
   setAgentRecords,
   type AgentRecords,
-} from "./ens";
+} from "./ens.js";
 export {
   generateKeyPair,
   generateKeyPairFromSignature,
@@ -13,7 +13,7 @@ export {
   signEIP191,
   verifyEIP191,
   type KeyPair,
-} from "./crypto";
+} from "./crypto.js";
 export {
   canonicalize,
   envelopeSigningPayload,
@@ -22,7 +22,7 @@ export {
   ReplayCache,
   type Envelope,
   type UnsignedEnvelope,
-} from "./envelope";
+} from "./envelope.js";
 export {
   appendToInbox,
   replyToInbox,
@@ -30,8 +30,8 @@ export {
   readReplies,
   type InboxMessage,
   type InboxConfig,
-} from "./inbox";
-export { ZeroGStorage, type StorageConfig } from "./storage";
+} from "./inbox.js";
+export { ZeroGStorage, type StorageConfig } from "./storage.js";
 export {
   loadKeystore,
   saveKeystore,
@@ -47,7 +47,7 @@ export {
   hasInboundFromPeer,
   type Keystore,
   type BiomeKeyEntry,
-} from "./keystore";
+} from "./keystore.js";
 export {
   defaultPolicy,
   resolveBiomePolicy,
@@ -66,7 +66,7 @@ export {
   type BridgeCheckCtx,
   type SendCheckCtx,
   type ReceiveCheckCtx,
-} from "./policy";
+} from "./policy.js";
 export {
   buildContextManifest,
   buildHistoryManifest,
@@ -88,7 +88,7 @@ export {
   type BuildHistoryManifestArgs,
   type LoadManifestArgs,
   type WalkHistoryOpts,
-} from "./manifest";
+} from "./manifest.js";
 export {
   Hermes,
   type HermesConfig,
@@ -99,7 +99,7 @@ export {
   type BridgeArgs,
   type BridgeResult,
   type PolicyDropInfo,
-} from "./client";
+} from "./client.js";
 export {
   createBiome,
   joinBiome,
@@ -124,9 +124,9 @@ export {
   type JoinBiomeResult,
   type BuildBiomeEnvelopeArgs,
   type DecryptedBiomeEnvelope,
-} from "./biome";
-export { resolveBiomeRecords, setBiomeRecords } from "./ens";
-export { setAnimaRecord, setAnimusRecord } from "./ens";
+} from "./biome.js";
+export { resolveBiomeRecords, setBiomeRecords } from "./ens.js";
+export { setAnimaRecord, setAnimusRecord } from "./ens.js";
 export {
   buildAnima,
   resolveAnima,
@@ -137,7 +137,7 @@ export {
   ANIMA_TEXT_KEY,
   type AnimaDoc,
   type UnsignedAnimaDoc,
-} from "./anima";
+} from "./anima.js";
 export {
   buildAnimus,
   resolveAnimus,
@@ -146,4 +146,4 @@ export {
   ANIMUS_TEXT_KEY,
   type AnimusDoc,
   type UnsignedAnimusDoc,
-} from "./animus";
+} from "./animus.js";

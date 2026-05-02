@@ -12,10 +12,10 @@
 
 import { type PublicClient, type WalletClient, type Account } from "viem";
 import { getEnsText, normalize } from "viem/ens";
-import { canonicalize } from "./envelope";
-import { signEIP191, verifyEIP191 } from "./crypto";
-import { encryptBiomePayload, decryptBiomePayload } from "./biome";
-import { ZeroGStorage } from "./storage";
+import { canonicalize } from "./envelope.js";
+import { signEIP191, verifyEIP191 } from "./crypto.js";
+import { encryptBiomePayload, decryptBiomePayload } from "./biome.js";
+import { ZeroGStorage } from "./storage.js";
 
 export const ANIMUS_TEXT_KEY = "biome.animus";
 export const ANIMUS_VERSION = 1 as const;

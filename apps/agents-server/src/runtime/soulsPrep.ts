@@ -67,7 +67,10 @@ async function effectiveOwner(name: string): Promise<Address> {
 }
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const AGENTS_DIR = resolve(__dirname, "../../../web/agents");
+// Dev: relative to apps/agents-server/dist/runtime/. Container builds set
+// AGENTS_DIR explicitly because `pnpm deploy` flattens the layout.
+const AGENTS_DIR =
+  process.env.AGENTS_DIR ?? resolve(__dirname, "../../../web/agents");
 
 /** If the agent doesn't yet have a `hermes.anima` ENS text record, build
  * one from `agents/<slug>/anima.md` (or fall back to `persona.md`),

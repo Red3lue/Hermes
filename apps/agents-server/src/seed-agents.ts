@@ -112,10 +112,9 @@ const agents: Array<{ slug: string; ens: string }> = [
   { slug: "reporter", ens: "reporter.hermes.eth" },
 ];
 
-const AGENTS_DIR = resolve(
-  fileURLToPath(new URL(".", import.meta.url)),
-  "../../web/agents",
-);
+const AGENTS_DIR =
+  process.env.AGENTS_DIR ??
+  resolve(fileURLToPath(new URL(".", import.meta.url)), "../../web/agents");
 
 function agentJsonPath(slug: string): string {
   return join(AGENTS_DIR, slug, "agent.json");

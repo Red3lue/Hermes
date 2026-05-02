@@ -1,12 +1,12 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import type { KeyPair } from "./crypto";
+import type { KeyPair } from "./crypto.js";
 import {
   defaultPolicy,
   mergePolicy,
   type AgentPolicy,
   type AgentPolicyPatch,
-} from "./policy";
+} from "./policy.js";
 
 export type BiomeKeyEntry = {
   version: number;

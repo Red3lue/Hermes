@@ -3,8 +3,11 @@ import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-// agents folder lives at apps/web/agents/ relative to repo root
-const AGENTS_DIR = resolve(__dirname, "../../web/agents");
+// agents folder lives at apps/web/agents/ relative to repo root in dev,
+// but containerised builds (e.g. Cloud Run via Dockerfile) flatten the
+// layout — so honour an explicit AGENTS_DIR env override.
+const AGENTS_DIR =
+  process.env.AGENTS_DIR ?? resolve(__dirname, "../../web/agents");
 
 export type AgentDef = {
   slug: string;

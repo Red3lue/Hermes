@@ -9,7 +9,7 @@ import {
   resolveBiomeRecords,
   setAgentRecords,
   type AgentRecords,
-} from "./ens";
+} from "./ens.js";
 import {
   generateKeyPairFromSignature,
   encryptMessage,
@@ -17,7 +17,7 @@ import {
   signEIP191,
   verifyEIP191,
   type KeyPair,
-} from "./crypto";
+} from "./crypto.js";
 import {
   envelopeSigningPayload,
   serializeEnvelope,
@@ -25,14 +25,14 @@ import {
   ReplayCache,
   type Envelope,
   type UnsignedEnvelope,
-} from "./envelope";
+} from "./envelope.js";
 import {
   appendToInbox,
   replyToInbox,
   readInbox,
   type InboxMessage,
-} from "./inbox";
-import { ZeroGStorage, type StorageConfig } from "./storage";
+} from "./inbox.js";
+import { ZeroGStorage, type StorageConfig } from "./storage.js";
 import {
   getLastHistoryRoot,
   historyKey,
@@ -41,7 +41,7 @@ import {
   setLastHistoryRoot,
   tryLoadKeystore,
   type Keystore,
-} from "./keystore";
+} from "./keystore.js";
 import {
   defaultPolicy,
   mergePolicy,
@@ -52,15 +52,15 @@ import {
   type AgentPolicy,
   type AgentPolicyPatch,
   type BridgeChannel,
-} from "./policy";
+} from "./policy.js";
 import {
   joinBiome,
   buildBiomeEnvelope,
   decryptBiomeEnvelope,
   type BiomeContext,
   type BiomeDoc,
-} from "./biome";
-import { buildHistoryManifest, type ManifestEntry } from "./manifest";
+} from "./biome.js";
+import { buildHistoryManifest, type ManifestEntry } from "./manifest.js";
 
 export type PolicyDropInfo = {
   err: PolicyDeniedError;

@@ -11,7 +11,7 @@ import {
   encodePacked,
   type PublicClient,
 } from "viem";
-import { client as defaultClient } from "./config/config";
+import { client as defaultClient } from "./config/config.js";
 
 // Minimal ENS PublicResolver ABI — only what we need for setting records.
 // Bypasses @ensdomains/ensjs/wallet which breaks under viem 2.x peer skew.

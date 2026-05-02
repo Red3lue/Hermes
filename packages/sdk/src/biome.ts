@@ -9,15 +9,15 @@ import {
   signEIP191,
   verifyEIP191,
   type KeyPair,
-} from "./crypto";
+} from "./crypto.js";
 import {
   canonicalize,
   envelopeSigningPayload,
   type Envelope,
   type UnsignedEnvelope,
-} from "./envelope";
-import { resolveAgent, resolveBiomeRecords, setBiomeRecords } from "./ens";
-import { ZeroGStorage } from "./storage";
+} from "./envelope.js";
+import { resolveAgent, resolveBiomeRecords, setBiomeRecords } from "./ens.js";
+import { ZeroGStorage } from "./storage.js";
 
 const { encodeBase64, decodeBase64, decodeUTF8, encodeUTF8 } = naclUtil;
 
