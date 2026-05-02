@@ -28,8 +28,11 @@ const USERS_PARENT =
   process.env.HERMES_USERS_PARENT ?? "users.hermes.eth";
 const BIOMES_PARENT =
   process.env.HERMES_BIOMES_PARENT ?? "biomes.hermes.eth";
+const AGENTS_PARENT =
+  process.env.HERMES_AGENTS_PARENT ?? "hermes.eth";
 
 const VALID_LABEL_RE = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
+const RESERVED_LABELS = new Set(["biomes", "users", "agents"]);
 
 function ensChainAndClients() {
   const ensChain = addEnsContracts(sepolia);
@@ -242,6 +245,96 @@ registerRouter.post("/register-biome", async (req, res) => {
   } catch (err) {
     res.status(500).json({
       error: `biome subname mint failed for ${ens}: ${(err as Error).message.split("\n")[0]}`,
+    });
+  }
+});
+
+// POST /register-agent
+//   body: { address: "0x...", label: "alice" }
+//   - validates label
+//   - mints `<label>.hermes.eth` as a NameWrapper subname owned by the
+//     user's address. Idempotent if already owned by them.
+//   - returns { ens, owner, txHash? }
+//
+// After this the user's FE derives an X25519 keypair from a deterministic
+// signature, then sets addr / hermes.pubkey / hermes.inbox text records
+// from their own wallet. Anima can be published optionally afterwards.
+registerRouter.post("/register-agent", async (req, res) => {
+  const { address, label } = req.body as {
+    address?: string;
+    label?: string;
+  };
+  if (
+    typeof address !== "string" ||
+    !address.startsWith("0x") ||
+    address.length !== 42
+  ) {
+    res.status(400).json({ error: "address (0x-prefixed, 42 chars) required" });
+    return;
+  }
+  if (typeof label !== "string" || !VALID_LABEL_RE.test(label)) {
+    res.status(400).json({
+      error:
+        "label must be 3–32 chars, lowercase a-z/0-9/-, and start+end with alphanumeric",
+    });
+    return;
+  }
+  if (RESERVED_LABELS.has(label)) {
+    res.status(400).json({
+      error: `label "${label}" is reserved (namespace parent)`,
+    });
+    return;
+  }
+
+  let publicClient: ReturnType<typeof ensChainAndClients>["publicClient"];
+  let wallet: ReturnType<typeof ensChainAndClients>["wallet"];
+  try {
+    ({ publicClient, wallet } = ensChainAndClients());
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+    return;
+  }
+
+  const userAddr = address as Address;
+  const ens = `${label}.${AGENTS_PARENT}`;
+
+  let currentOwner: Address;
+  try {
+    currentOwner = await ownerOf(publicClient, ens);
+  } catch (err) {
+    res.status(502).json({
+      error: `ENS lookup failed for ${ens}: ${(err as Error).message}`,
+    });
+    return;
+  }
+
+  if (currentOwner.toLowerCase() === userAddr.toLowerCase()) {
+    res.json({ ens, owner: userAddr, alreadyOwned: true });
+    return;
+  }
+
+  const isFreeOrOurs =
+    currentOwner === "0x0000000000000000000000000000000000000000" ||
+    currentOwner.toLowerCase() === wallet.account!.address.toLowerCase();
+
+  if (!isFreeOrOurs) {
+    res.status(409).json({
+      error: `${ens} already taken by ${currentOwner}`,
+    });
+    return;
+  }
+
+  try {
+    const txHash = await createSubname(wallet, {
+      name: ens,
+      contract: "nameWrapper",
+      owner: userAddr,
+    });
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
+    res.json({ ens, owner: userAddr, txHash });
+  } catch (err) {
+    res.status(500).json({
+      error: `agent subname mint failed for ${ens}: ${(err as Error).message.split("\n")[0]}`,
     });
   }
 });

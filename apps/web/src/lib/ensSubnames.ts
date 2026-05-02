@@ -89,19 +89,35 @@ export async function filterOwnedNames(
   return results.filter((n): n is string => n !== null);
 }
 
-/** Discover ENS names owned by a user.
+// Labels that are namespace parents under our ENS hierarchy and must
+// never be reported as user-owned "agents" or "biomes" themselves.
+// (e.g. `biomes.hermes.eth` is the parent of biome subnames; not an agent.)
+const NAMESPACE_LABELS = new Set(["biomes", "users", "agents"]);
+
+/** Restrict an ENS name to a *direct* child of `parentEns`. Returns the
+ * single-label child or null if not a direct child. */
+function directChildLabel(ens: string, parentEns: string): string | null {
+  const suffix = `.${parentEns}`;
+  if (!ens.endsWith(suffix)) return null;
+  const label = ens.slice(0, -suffix.length);
+  if (!label || label.includes(".")) return null;
+  return label;
+}
+
+/** Discover ENS names owned by a user, filtered to direct children of
+ * `parentEns` and excluding namespace parents like "biomes" / "users".
  *
  * Strategy:
  *  1. Pull the candidate set from `known-agents.json` (agents shipped with
  *     the app — coordinator + quorum + chatbot + inactive ones).
  *  2. Fall back to a legacy ENS subgraph query for anything else minted
- *     under the parent domain (best-effort; filters by Registry owner so
- *     wrapped subnames there will be missed, but the on-chain pass below
- *     covers them).
- *  3. Probe each candidate's effective owner on chain and keep matches.
+ *     under the parent domain (best-effort).
+ *  3. Filter to direct children + exclude namespace labels.
+ *  4. Probe each candidate's effective owner on chain and keep matches.
  *
  * Net result: a wallet sees every subname it actually owns, whether
- * wrapped or unwrapped, regardless of subgraph indexing lag.
+ * wrapped or unwrapped, regardless of subgraph indexing lag, without
+ * cross-pollution between agents and biomes.
  */
 export async function getOwnedSubnames(
   ownerAddress: string,
@@ -113,12 +129,11 @@ export async function getOwnedSubnames(
   try {
     const r = await fetch("/known-agents.json");
     if (r.ok) {
-      const data = (await r.json()) as Record<
-        string,
-        { ens?: string }
-      >;
+      const data = (await r.json()) as Record<string, { ens?: string }>;
       for (const v of Object.values(data)) {
-        if (v?.ens && v.ens.endsWith(`.${parentEns}`)) {
+        if (!v?.ens) continue;
+        const label = directChildLabel(v.ens, parentEns);
+        if (label && !NAMESPACE_LABELS.has(label)) {
           candidates.add(v.ens);
         }
       }
@@ -130,7 +145,12 @@ export async function getOwnedSubnames(
   // (2) subgraph fallback for legacy unwrapped subnames
   try {
     const subgraphResults = await fetchSubgraphSubdomains(parentEns);
-    for (const name of subgraphResults) candidates.add(name);
+    for (const name of subgraphResults) {
+      const label = directChildLabel(name, parentEns);
+      if (label && !NAMESPACE_LABELS.has(label)) {
+        candidates.add(name);
+      }
+    }
   } catch {
     /* ignore */
   }
