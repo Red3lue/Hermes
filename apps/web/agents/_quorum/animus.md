@@ -1,4 +1,4 @@
-# Animus — quorum.biomes.hermes.eth
+# Animus — quorumv2.biomes.hermes.eth
 
 This is the soul of the quorum biome. Members read this before deliberating;
 non-members see only ciphertext. Owner-mutable: replace by uploading a new

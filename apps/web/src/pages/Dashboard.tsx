@@ -121,7 +121,7 @@ export default function Dashboard() {
                   <div className="flex gap-2">
                     <input
                       className="flex-1 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-mono placeholder-gray-600 focus:border-hermes-600 focus:outline-none"
-                      placeholder="quorum.biomes.hermes.eth"
+                      placeholder="quorumv2.biomes.hermes.eth"
                       value={joinInput}
                       onChange={(e) => setJoinInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleJoin()}

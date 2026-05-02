@@ -26,6 +26,10 @@ const REGISTRY_ABI = [
 
 const USERS_PARENT =
   process.env.HERMES_USERS_PARENT ?? "users.hermes.eth";
+const BIOMES_PARENT =
+  process.env.HERMES_BIOMES_PARENT ?? "biomes.hermes.eth";
+
+const VALID_LABEL_RE = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 
 function ensChainAndClients() {
   const ensChain = addEnsContracts(sepolia);
@@ -155,4 +159,89 @@ registerRouter.post("/register-user", async (req, res) => {
   res.status(409).json({
     error: `could not allocate a free label under ${USERS_PARENT} after 3 attempts`,
   });
+});
+
+// POST /register-biome
+//   body: { address: "0x...", label: "research-pod" }
+//   - validates label
+//   - mints `<label>.biomes.hermes.eth` as a NameWrapper subname owned by
+//     the user's address. Idempotent if already owned by them.
+//   - returns { ens, owner, txHash? }
+//
+// After this the user's FE creates the BiomeDoc, uploads to 0G, and writes
+// biome.root + biome.version (paid by user wallet, since they own the
+// subname after this mint).
+registerRouter.post("/register-biome", async (req, res) => {
+  const { address, label } = req.body as {
+    address?: string;
+    label?: string;
+  };
+  if (
+    typeof address !== "string" ||
+    !address.startsWith("0x") ||
+    address.length !== 42
+  ) {
+    res.status(400).json({ error: "address (0x-prefixed, 42 chars) required" });
+    return;
+  }
+  if (typeof label !== "string" || !VALID_LABEL_RE.test(label)) {
+    res.status(400).json({
+      error:
+        "label must be 3–32 chars, lowercase a-z/0-9/-, and start+end with alphanumeric",
+    });
+    return;
+  }
+
+  let publicClient: ReturnType<typeof ensChainAndClients>["publicClient"];
+  let wallet: ReturnType<typeof ensChainAndClients>["wallet"];
+  try {
+    ({ publicClient, wallet } = ensChainAndClients());
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+    return;
+  }
+
+  const userAddr = address as Address;
+  const ens = `${label}.${BIOMES_PARENT}`;
+
+  let currentOwner: Address;
+  try {
+    currentOwner = await ownerOf(publicClient, ens);
+  } catch (err) {
+    res.status(502).json({
+      error: `ENS lookup failed for ${ens}: ${(err as Error).message}`,
+    });
+    return;
+  }
+
+  // Already owned by this user → idempotent success
+  if (currentOwner.toLowerCase() === userAddr.toLowerCase()) {
+    res.json({ ens, owner: userAddr, alreadyOwned: true });
+    return;
+  }
+
+  const isFreeOrOurs =
+    currentOwner === "0x0000000000000000000000000000000000000000" ||
+    currentOwner.toLowerCase() === wallet.account!.address.toLowerCase();
+
+  if (!isFreeOrOurs) {
+    res.status(409).json({
+      error: `${ens} already taken by ${currentOwner}`,
+    });
+    return;
+  }
+
+  try {
+    const txHash = await createSubname(wallet, {
+      name: ens,
+      contract: "nameWrapper",
+      owner: userAddr,
+    });
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
+    res.json({ ens, owner: userAddr, txHash });
+  } catch (err) {
+    res.status(500).json({
+      error: `biome subname mint failed for ${ens}: ${(err as Error).message.split("\n")[0]}`,
+    });
+  }
 });

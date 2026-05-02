@@ -60,7 +60,7 @@ const inboxContract = asAddress(
   "HERMES_INBOX_CONTRACT",
 );
 const biomeName =
-  optional("HERMES_BIOME_ENS") ?? "quorum.biomes.hermes.eth";
+  optional("HERMES_BIOME_ENS") ?? "quorumv2.biomes.hermes.eth";
 const aliceEns = optional("HERMES_ALICE_ENS") ?? "alice.hermes.eth";
 
 const publicClient = createPublicClient({
@@ -222,7 +222,7 @@ async function main() {
 
   // 5. Build + sign + upload + setBiomeRecords via SDK. createBiome uses
   // alice's wallet to sign the doc + setText. setText will fail if alice
-  // does not own the resolver record on quorum.biomes.hermes.eth — in that
+  // does not own the resolver record on quorumv2.biomes.hermes.eth — in that
   // case ensure alice owns the subname (you confirmed she does).
   const storage = new ZeroGStorage({
     rpcUrl: required("ZEROG_RPC_URL"),

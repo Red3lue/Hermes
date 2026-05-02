@@ -17,7 +17,7 @@ import { bootQuorum } from "./quorum/index.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const QUORUM_BIOME =
-  process.env.QUORUM_BIOME_NAME ?? "quorum.biomes.hermes.eth";
+  process.env.QUORUM_BIOME_NAME ?? "quorumv2.biomes.hermes.eth";
 
 const app = express();
 

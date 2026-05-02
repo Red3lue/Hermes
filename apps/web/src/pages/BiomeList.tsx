@@ -8,7 +8,7 @@ export default function BiomeList() {
   const { owned, all } = useMyBiomes();
   const knownAgents = useKnownAgents();
   const demoBiomeName =
-    knownAgents["demoBiome"]?.ens ?? "quorum.biomes.hermes.eth";
+    knownAgents["demoBiome"]?.ens ?? "quorumv2.biomes.hermes.eth";
 
   const discover = [...new Set([demoBiomeName, ...all])];
 

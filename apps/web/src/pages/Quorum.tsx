@@ -11,7 +11,7 @@ import { submitRequestToCoordinator } from "@/lib/quorumClient";
 import { deriveX25519FromWallet } from "@/lib/userIdentity";
 
 const BIOME_NAME =
-  import.meta.env.VITE_QUORUM_BIOME ?? "quorum.biomes.hermes.eth";
+  import.meta.env.VITE_QUORUM_BIOME ?? "quorumv2.biomes.hermes.eth";
 const COORDINATOR_ENS =
   import.meta.env.VITE_COORDINATOR_ENS ?? "coordinator.hermes.eth";
 

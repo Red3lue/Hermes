@@ -45,5 +45,5 @@
     "displayName": "Reporter",
     "tagline": "Synthesises member verdicts into the final report"
   },
-  "demoBiome": { "ens": "quorum.biomes.hermes.eth" }
+  "demoBiome": { "ens": "quorumv2.biomes.hermes.eth" }
 }
