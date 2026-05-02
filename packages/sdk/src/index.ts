@@ -95,6 +95,7 @@ export {
   type ReceivedMessage,
   type BiomeReceivedMessage,
   type SendToBiomeOptions,
+  type SendOptions,
   type BridgeArgs,
   type BridgeResult,
   type PolicyDropInfo,

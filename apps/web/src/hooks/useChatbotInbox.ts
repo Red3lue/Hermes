@@ -14,6 +14,8 @@ export type ConciergeMessage = {
   blockNumber: bigint;
   txHash: `0x${string}`;
   rootHash: `0x${string}`;
+  thread?: string;
+  history?: `0x${string}`;
 };
 
 const POLL_MS = 6000;
@@ -93,6 +95,8 @@ export function useChatbotInbox(args: {
           blockNumber: log.blockNumber,
           txHash: log.transactionHash,
           rootHash: log.rootHash,
+          thread: env.thread,
+          history: env.history,
         };
         setMessages((prev) =>
           [...prev, ev].sort(

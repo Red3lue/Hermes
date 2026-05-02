@@ -88,6 +88,34 @@ export type ReceivedMessage = {
   rootHash: `0x${string}`;
   replyTo: `0x${string}`;
   blockNumber: bigint;
+  // v2 envelope fields surfaced for callers that walk threads / chains.
+  thread?: string;
+  context?: `0x${string}`;
+  history?: `0x${string}`;
+};
+
+/** Options for `Hermes.send()` (1:1 DM). Mirrors `SendToBiomeOptions`. */
+export type SendOptions = {
+  /** Single-pointer parent reference; used by `replyToInbox` for cheap
+   * threading on the contract side. */
+  replyTo?: `0x${string}`;
+  /** Sub-thread tag — surfaced on the envelope and used for keying the
+   * history chain so multiple concurrent threads don't collide. */
+  thread?: string;
+  /** rootHash of a ContextManifest the recipient should resolve before
+   * processing. */
+  context?: `0x${string}`;
+  /** Override the auto-chained `history` rootHash on the outgoing
+   * envelope. If omitted and `chainHistory` is true, the client pulls the
+   * last history root for this (peer, thread) from the keystore. Pass
+   * `null` to explicitly skip history on this single send. */
+  history?: `0x${string}` | null;
+  /** Default false (1:1 chains are opt-in to keep ephemeral DMs cheap).
+   * When true: after upload, build a HistoryManifest entry referencing
+   * this message + linked to the prior root, encrypt with 1:1 sender +
+   * recipient keys, upload to 0G, persist as the new last root for this
+   * (peer, thread). */
+  chainHistory?: boolean;
 };
 
 export type BiomeReceivedMessage = {
@@ -234,9 +262,20 @@ export class Hermes {
   async send(
     toName: string,
     text: string,
-    replyTo?: `0x${string}`,
-  ): Promise<{ rootHash: `0x${string}`; tx: Hash }> {
+    optsOrReplyTo?: SendOptions | `0x${string}`,
+  ): Promise<{
+    rootHash: `0x${string}`;
+    tx: Hash;
+    historyRoot?: `0x${string}`;
+  }> {
     if (!this.keys) throw new Error("call register() first or load a keystore");
+
+    // Backward-compat: legacy callers pass replyTo as the third arg
+    // directly. Normalise to the options shape.
+    const opts: SendOptions =
+      typeof optsOrReplyTo === "string"
+        ? { replyTo: optsOrReplyTo }
+        : (optsOrReplyTo ?? {});
 
     assertSendAllowed(this.policyState, {
       channel: { kind: "public", peer: toName },
@@ -244,6 +283,21 @@ export class Hermes {
     });
 
     const recipient = await resolveAgent(toName, this.cfg.publicClient);
+
+    // History chaining setup. Default OFF for 1:1 (different from biome
+    // which auto-chains) so quorum/internal traffic doesn't pay extra
+    // 0G uploads. Callers opt in with `chainHistory: true`.
+    const hKey = historyKey(toName, opts.thread);
+    const chain = opts.chainHistory === true;
+    let priorHistory: `0x${string}` | undefined;
+    if (opts.history === null) {
+      priorHistory = undefined;
+    } else if (opts.history !== undefined) {
+      priorHistory = opts.history;
+    } else if (chain) {
+      priorHistory = this.lookupHistoryRoot(hKey);
+    }
+
     const { ciphertext, nonce } = encryptMessage(
       text,
       recipient.pubkey,
@@ -258,7 +312,10 @@ export class Hermes {
       nonce,
       ciphertext,
       ephemeralPubKey: this.keys.publicKey,
-      replyTo,
+      replyTo: opts.replyTo,
+      thread: opts.thread,
+      context: opts.context,
+      history: priorHistory,
     };
     const sig = await signEIP191(
       this.cfg.wallet,
@@ -273,11 +330,41 @@ export class Hermes {
       publicClient: this.cfg.publicClient,
       wallet: this.cfg.wallet,
     };
-    const tx = replyTo
-      ? await replyToInbox(inboxCfg, toName, replyTo, rootHash)
+    const tx = opts.replyTo
+      ? await replyToInbox(inboxCfg, toName, opts.replyTo, rootHash)
       : await appendToInbox(inboxCfg, toName, rootHash);
 
-    return { rootHash, tx };
+    let historyRoot: `0x${string}` | undefined;
+    if (chain) {
+      const entry: ManifestEntry = {
+        ts: envelope.ts,
+        from: this.cfg.ensName,
+        rootHash,
+        thread: opts.thread,
+        // Carry the plaintext into the manifest so future chain-walkers
+        // can reconstruct the full transcript without needing to decrypt
+        // the on-chain envelope. Manifest is itself encrypted (1:1) and
+        // signed, so the body never lands as plaintext on 0G.
+        body: text,
+      };
+      const built = await buildHistoryManifest({
+        entries: [entry],
+        prev: priorHistory,
+        createdBy: this.cfg.ensName,
+        wallet: this.cfg.wallet,
+        encrypt: {
+          kind: "1:1",
+          senderPublicKey: this.keys.publicKey,
+          senderSecretKey: this.keys.secretKey,
+          recipientPublicKey: recipient.pubkey,
+        },
+        storage: this.storage,
+      });
+      historyRoot = built.root;
+      this.recordHistoryRoot(hKey, historyRoot);
+    }
+
+    return { rootHash, tx, historyRoot };
   }
 
   async fetchInbox(fromBlock: bigint = 0n): Promise<ReceivedMessage[]> {
@@ -377,6 +464,10 @@ export class Hermes {
         from: this.cfg.ensName,
         rootHash,
         thread: opts?.thread,
+        // Body in the manifest enables chain-walk reconstruction —
+        // see equivalent comment in `send()`. Biome manifests are
+        // sealed with K, so members can recover full transcripts.
+        body: text,
       };
       const built = await buildHistoryManifest({
         entries: [entry],
@@ -572,6 +663,9 @@ export class Hermes {
       rootHash: log.rootHash,
       replyTo: log.replyTo,
       blockNumber: log.blockNumber,
+      thread: envelope.thread,
+      context: envelope.context,
+      history: envelope.history,
     };
   }
 

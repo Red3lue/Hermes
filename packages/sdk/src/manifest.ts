@@ -21,6 +21,13 @@ export type ManifestEntry = {
   from: string; // sender ENS
   rootHash: `0x${string}`; // 0G rootHash of the message envelope
   thread?: string;
+  /** Plaintext copy of the message body. Optional. When set, lets a
+   * future caller walk the chain and reconstruct full transcripts —
+   * including bodies the caller could not decrypt off the on-chain
+   * envelope (e.g. messages they sent themselves, sealed for someone
+   * else's pubkey). Body inherits the manifest's own encryption +
+   * signature, so it's never plaintext on the wire. */
+  body?: string;
 };
 
 export type Manifest = {

@@ -57,9 +57,13 @@ export function makeConciergeHandler(agent: AgentDef): RoleHandler {
       while (history.length > HISTORY_CAP_PAIRS * 2) history.shift();
       histories.set(msg.from, history);
 
-      // Sealed reply DM (sealed to user's pubkey via SDK send).
+      // Sealed reply DM (sealed to user's pubkey via SDK send). Opt
+      // into history chaining: each reply carries the prior chain root
+      // in `envelope.history` and a new HistoryManifest is built per
+      // (peer, thread). That lets the user walk our reply chain backward
+      // and reconstruct the full conversation across browsers.
       try {
-        await ctx.sendDM(msg.from, reply);
+        await ctx.sendDM(msg.from, reply, { chainHistory: true });
         console.log(
           `[concierge] replied to ${msg.from}: ${reply.slice(0, 60)}…`,
         );

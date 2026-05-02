@@ -6,6 +6,7 @@ import {
   ZeroGStorage,
   type ReceivedMessage,
   type BiomeReceivedMessage,
+  type SendOptions,
 } from "@hermes/sdk";
 import { getPublicClient, makeWalletClient } from "../chain.js";
 import type { AgentDef } from "../registry.js";
@@ -22,7 +23,14 @@ export type RuntimeContext = {
   agent: AgentDef;
   hermes: Hermes;
   // Convenience helpers
-  sendDM: (toEns: string, body: string) => Promise<{ rootHash: `0x${string}` }>;
+  sendDM: (
+    toEns: string,
+    body: string,
+    opts?: SendOptions,
+  ) => Promise<{
+    rootHash: `0x${string}`;
+    historyRoot?: `0x${string}`;
+  }>;
   broadcast: (
     biomeName: string,
     body: string,
@@ -209,10 +217,10 @@ export async function spawnAgentRuntime(
   const ctx: RuntimeContext = {
     agent,
     hermes,
-    sendDM: async (toEns, body) =>
+    sendDM: async (toEns, body, opts) =>
       withRetry(`sendDM→${toEns}`, async () => {
-        const r = await hermes.send(toEns, body);
-        return { rootHash: r.rootHash };
+        const r = await hermes.send(toEns, body, opts);
+        return { rootHash: r.rootHash, historyRoot: r.historyRoot };
       }),
     broadcast: async (biomeName, body) =>
       withRetry(`broadcast→${biomeName}`, async () => {
