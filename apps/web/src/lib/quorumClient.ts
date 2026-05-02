@@ -8,7 +8,7 @@ import {
   appendToInbox,
   type Envelope,
   type UnsignedEnvelope,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { publicClient, INBOX_CONTRACT } from "./chainConfig";
 import { encodeBody, newContextId, type QuorumBody } from "./quorumEnvelopes";
 

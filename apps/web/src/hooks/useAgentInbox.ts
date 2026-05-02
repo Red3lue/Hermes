@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { readInbox, type InboxMessage, type InboxConfig } from "@hermes/sdk";
+import { readInbox, type InboxMessage, type InboxConfig } from "hermes-agents-sdk";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
 
 const inboxConfig: InboxConfig = {

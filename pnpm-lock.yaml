@@ -51,9 +51,6 @@ importers:
       '@ensdomains/ensjs':
         specifier: ^4.2.2
         version: 4.2.2(typescript@5.9.3)(viem@2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))(zod@4.4.1)
-      '@hermes/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -63,6 +60,9 @@ importers:
       express:
         specifier: ^4.21.1
         version: 4.22.1
+      hermes-agents-sdk:
+        specifier: workspace:*
+        version: link:../../packages/sdk
       viem:
         specifier: ^2.21.48
         version: 2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1)
@@ -88,9 +88,6 @@ importers:
       '@0gfoundation/0g-ts-sdk':
         specifier: ^1.2.6
         version: 1.2.8(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
-      '@hermes/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       '@reown/appkit':
         specifier: ^1.8.19
         version: 1.8.19(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.4.1)
@@ -106,6 +103,9 @@ importers:
       ethers:
         specifier: ^6.16.0
         version: 6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      hermes-agents-sdk:
+        specifier: workspace:*
+        version: link:../../packages/sdk
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -164,12 +164,12 @@ importers:
       '@ensdomains/ensjs':
         specifier: ^4.2.2
         version: 4.2.2(typescript@5.9.3)(viem@2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))(zod@4.4.1)
-      '@hermes/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      hermes-agents-sdk:
+        specifier: workspace:*
+        version: link:../../packages/sdk
       viem:
         specifier: ^2.48.4
         version: 2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1)
@@ -186,12 +186,12 @@ importers:
       '@ensdomains/ensjs':
         specifier: ^4.0.0
         version: 4.2.2(typescript@5.9.3)(viem@1.21.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
-      '@hermes/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      hermes-agents-sdk:
+        specifier: workspace:*
+        version: link:../../packages/sdk
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
@@ -208,15 +208,15 @@ importers:
 
   packages/cli:
     dependencies:
-      '@hermes/sdk':
-        specifier: workspace:*
-        version: link:../sdk
       commander:
         specifier: ^12.1.0
         version: 12.1.0
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      hermes-agents-sdk:
+        specifier: workspace:*
+        version: link:../sdk
     devDependencies:
       tsx:
         specifier: ^4.19.0
@@ -228,14 +228,11 @@ importers:
   packages/sdk:
     dependencies:
       '@0glabs/0g-ts-sdk':
-        specifier: latest
+        specifier: ^0.3.3
         version: 0.3.3(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       '@ensdomains/ensjs':
         specifier: ^4.2.2
         version: 4.2.2(typescript@5.9.3)(viem@2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))(zod@4.4.1)
-      '@wagmi/core':
-        specifier: ^3.4.6
-        version: 3.4.8(@tanstack/query-core@5.100.7)(@types/react@18.3.28)(accounts@0.8.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
@@ -245,9 +242,6 @@ importers:
       viem:
         specifier: ^2.48.4
         version: 2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1)
-      wagmi:
-        specifier: ^3.6.6
-        version: 3.6.9(@coinbase/wallet-sdk@4.3.6(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.4.1))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))(@tanstack/query-core@5.100.7)(@tanstack/react-query@5.100.7(react@18.3.1))(@types/react@18.3.28)(@walletconnect/ethereum-provider@2.21.1(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))(accounts@0.8.9)(porto@0.2.35)(react@18.3.1)(typescript@5.9.3)(viem@2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))
     devDependencies:
       typescript:
         specifier: ^5.6.0

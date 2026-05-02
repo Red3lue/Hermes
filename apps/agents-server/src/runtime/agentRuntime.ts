@@ -7,7 +7,7 @@ import {
   type ReceivedMessage,
   type BiomeReceivedMessage,
   type SendOptions,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { getPublicClient, makeWalletClient } from "../chain.js";
 import type { AgentDef } from "../registry.js";
 import { ensureAgentKeystore, loadKeystoreFile } from "./keystorePrep.js";

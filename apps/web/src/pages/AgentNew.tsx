@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { keccak256, toBytes } from "viem";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
-import { setAgentRecords } from "@hermes/sdk";
+import { setAgentRecords } from "hermes-agents-sdk";
 import { publishAnima } from "@/lib/animaClient";
 import { WalletButton } from "@/components/WalletButton";
 import { useWallet } from "@/hooks/useWallet";

@@ -30,7 +30,7 @@ import {
   generateKeyPairFromSignature,
   resolveAgent,
   setAgentRecords,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 
 type SeedAgent = {
   slug: string;

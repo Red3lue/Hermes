@@ -9,10 +9,10 @@ import {
   ZeroGStorage,
   joinBiome,
   type Hermes,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { getEnsText, normalize } from "viem/ens";
 import { namehash, type Address } from "viem";
-import { ANIMA_TEXT_KEY, ANIMUS_TEXT_KEY } from "@hermes/sdk";
+import { ANIMA_TEXT_KEY, ANIMUS_TEXT_KEY } from "hermes-agents-sdk";
 import { getPublicClient, makeWalletClient } from "../chain.js";
 import { loadKeystoreFile } from "./keystorePrep.js";
 import type { AgentDef } from "../registry.js";

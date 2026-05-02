@@ -53,7 +53,7 @@ The recipient of every message is identified by `keccak256(namehash(ens))`. The 
 ```
 Hermes/
 ├── packages/
-│   ├── sdk/                    # @hermes/sdk — the deliverable
+│   ├── sdk/                    # hermes-agents-sdk — the deliverable
 │   │   └── src/
 │   │       ├── client.ts       # Hermes class: send/sendToBiome, fetchInbox, register…
 │   │       ├── envelope.ts     # v2 envelope schema + canonical JSON
@@ -191,7 +191,7 @@ USER ◀── sealed DM ───────  reply (envelope.history → prio
 
 ---
 
-## SDK surface (`@hermes/sdk`)
+## SDK surface (`hermes-agents-sdk`)
 
 ### Identity
 - `resolveAgent(ens, publicClient)` → `{ addr, pubkey, inbox }`
@@ -278,7 +278,7 @@ cd Hermes
 cp .env.example .env          # populate SEPOLIA_RPC_URL, DEPLOYER_PRIVATE_KEY, …
 cp apps/web/.env.example apps/web/.env
 pnpm install
-pnpm build                     # builds @hermes/sdk → @hermes/agents-server → @hermes/web
+pnpm build                     # builds hermes-agents-sdk → @hermes/agents-server → @hermes/web
 ```
 
 ### Run the demo locally

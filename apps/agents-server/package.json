@@ -14,7 +14,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
     "@ensdomains/ensjs": "^4.2.2",
-    "@hermes/sdk": "workspace:*",
+    "hermes-agents-sdk": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",

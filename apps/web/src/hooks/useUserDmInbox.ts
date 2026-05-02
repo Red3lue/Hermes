@@ -4,7 +4,7 @@ import {
   parseEnvelope,
   decryptMessage,
   resolveAgent,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
 import { downloadBlob } from "@/lib/browserStorage";
 import { decodeBody, type QuorumBody } from "@/lib/quorumEnvelopes";

@@ -5,7 +5,7 @@ import {
   generateKeyPairFromSignature,
   saveKeystore,
   type Keystore,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { makeWalletClient } from "../chain.js";
 import type { AgentDef } from "../registry.js";
 

@@ -21,7 +21,6 @@ vi.mock("../src/ens", () => ({
     .fn()
     .mockRejectedValue(new Error("__transport_reached__:resolveBiomeRecords")),
   setBiomeRecords: vi.fn(),
-  resolveEnsRecord: vi.fn(),
 }));
 
 vi.mock("../src/biome", async () => {

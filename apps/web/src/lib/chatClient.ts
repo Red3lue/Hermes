@@ -10,7 +10,7 @@ import {
   type Envelope,
   type UnsignedEnvelope,
   type ManifestEntry,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { publicClient, INBOX_CONTRACT } from "./chainConfig";
 import { downloadBlob } from "./browserStorage";
 

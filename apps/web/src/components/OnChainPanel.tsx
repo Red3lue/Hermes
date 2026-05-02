@@ -1,4 +1,4 @@
-import type { InboxMessage } from "@hermes/sdk";
+import type { InboxMessage } from "hermes-agents-sdk";
 
 const EXPLORER = "https://sepolia.etherscan.io";
 

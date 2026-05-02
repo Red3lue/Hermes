@@ -18,7 +18,7 @@ import {
   type BiomeDoc,
   type BiomeMember,
   type UnsignedBiomeDoc,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { WalletButton } from "@/components/WalletButton";
 import { useWallet } from "@/hooks/useWallet";
 import { useUserAgent } from "@/hooks/useUserAgent";

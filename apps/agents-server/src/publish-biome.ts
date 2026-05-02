@@ -31,7 +31,7 @@ import {
   createBiome,
   resolveBiomeRecords,
   type BiomeMember,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 
 const required = (name: string): string => {
   const value = process.env[name];
