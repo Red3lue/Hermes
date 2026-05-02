@@ -11,10 +11,60 @@ import {
   type Hermes,
 } from "@hermes/sdk";
 import { getEnsText, normalize } from "viem/ens";
+import { namehash, type Address } from "viem";
 import { ANIMA_TEXT_KEY, ANIMUS_TEXT_KEY } from "@hermes/sdk";
 import { getPublicClient, makeWalletClient } from "../chain.js";
 import { loadKeystoreFile } from "./keystorePrep.js";
 import type { AgentDef } from "../registry.js";
+
+const ENS_REGISTRY: Address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e";
+const NAME_WRAPPER_SEPOLIA: Address =
+  "0x0635513f179D50A207757E05759CbD106d7dFcE8";
+
+const REGISTRY_ABI = [
+  {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [{ name: "node", type: "bytes32" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+] as const;
+const NAME_WRAPPER_ABI = [
+  {
+    type: "function",
+    name: "ownerOf",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+] as const;
+
+/** Resolve the effective on-chain owner of an ENS name, transparently
+ * unwrapping NameWrapper-wrapped subnames. Returns 0x0 if not registered. */
+async function effectiveOwner(name: string): Promise<Address> {
+  const publicClient = getPublicClient();
+  const node = namehash(name);
+  const registryOwner = (await publicClient.readContract({
+    address: ENS_REGISTRY,
+    abi: REGISTRY_ABI,
+    functionName: "owner",
+    args: [node],
+  })) as Address;
+  if (registryOwner.toLowerCase() !== NAME_WRAPPER_SEPOLIA.toLowerCase()) {
+    return registryOwner;
+  }
+  try {
+    return (await publicClient.readContract({
+      address: NAME_WRAPPER_SEPOLIA,
+      abi: NAME_WRAPPER_ABI,
+      functionName: "ownerOf",
+      args: [BigInt(node)],
+    })) as Address;
+  } catch {
+    return "0x0000000000000000000000000000000000000000";
+  }
+}
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const AGENTS_DIR = resolve(__dirname, "../../../web/agents");
@@ -58,8 +108,10 @@ export async function ensureAgentAnima(agent: AgentDef): Promise<void> {
 
 /** If the biome doesn't yet have a `biome.animus` ENS text record, build
  * one from `agents/_quorum/animus.md` (if present), encrypt with K,
- * upload to 0G, and set the record. Skips if already set or if the source
- * file doesn't exist. */
+ * upload to 0G, and set the record. Skips if already set, if the source
+ * file doesn't exist, or if the deployer wallet doesn't own the biome
+ * subname (the demo flow lets users own biomes; in that case the user
+ * must publish the Animus from the FE dashboard themselves). */
 export async function ensureBiomeAnimus(
   biomeName: string,
   ownerAgent: AgentDef,
@@ -81,10 +133,26 @@ export async function ensureBiomeAnimus(
     );
     return;
   }
-  const content = readFileSync(animusFile, "utf8");
 
   const deployerKey = process.env.DEPLOYER_PRIVATE_KEY!;
   const wallet = makeWalletClient(deployerKey);
+
+  // Pre-flight: who owns the biome subname on chain? If the deployer
+  // doesn't own it, ENS setText would revert and we'd surface a confusing
+  // multicall error. Bail out cleanly with a hint pointing at the FE
+  // owner-side flow instead.
+  const owner = await effectiveOwner(biomeName);
+  const deployerAddr = wallet.account.address.toLowerCase();
+  if (owner.toLowerCase() !== deployerAddr) {
+    console.log(
+      `[souls] biome ${biomeName} is owned by ${owner} (deployer is ${wallet.account.address}). ` +
+        `Skipping animus auto-publish — the biome owner must publish from the FE dashboard ` +
+        `(/biomes/${encodeURIComponent(biomeName)} → Animus panel).`,
+    );
+    return;
+  }
+
+  const content = readFileSync(animusFile, "utf8");
   const storage = new ZeroGStorage({
     rpcUrl: process.env.ZEROG_RPC_URL!,
     indexerUrl: process.env.ZEROG_INDEXER_URL!,
@@ -93,7 +161,7 @@ export async function ensureBiomeAnimus(
       : `0x${deployerKey}`) as `0x${string}`,
   });
 
-  // Need K for this biome — derive via joinBiome as the owner.
+  // Need K for this biome — derive via joinBiome as the owner agent.
   const ks = loadKeystoreFile(ownerAgent.slug);
   const { K } = await joinBiome(
     {
