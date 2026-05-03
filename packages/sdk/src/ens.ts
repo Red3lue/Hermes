@@ -1,9 +1,4 @@
-import {
-  normalize,
-  getEnsText,
-  getEnsAddress,
-  getEnsResolver,
-} from "viem/ens";
+import { normalize, getEnsText, getEnsAddress, getEnsResolver } from "viem/ens";
 import {
   namehash,
   encodeFunctionData,
@@ -122,7 +117,9 @@ async function multicallResolver(
 
   const account = wallet.account ?? wallet.account?.address;
   if (!account) {
-    throw new Error("wallet has no account; pass a WalletClient with an account");
+    throw new Error(
+      "wallet has no account; pass a WalletClient with an account",
+    );
   }
 
   const hash = (await wallet.writeContract({

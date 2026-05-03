@@ -52,9 +52,7 @@
   },
   "dependencies": {
     "@0gfoundation/0g-ts-sdk": "^1.2.6",
-    "@ensdomains/ensjs": "^4.2.2",
     "ethers": "^6.16.0",
-    "@wagmi/core": "^3.4.6",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
     "viem": "^2.48.4"

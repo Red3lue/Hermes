@@ -230,12 +230,6 @@ importers:
       '@0gfoundation/0g-ts-sdk':
         specifier: ^1.2.6
         version: 1.2.8(bufferutil@4.1.0)(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
-      '@ensdomains/ensjs':
-        specifier: ^4.2.2
-        version: 4.2.2(typescript@5.9.3)(viem@2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))(zod@4.4.1)
-      '@wagmi/core':
-        specifier: ^3.4.6
-        version: 3.4.8(@tanstack/query-core@5.100.7)(@types/react@18.3.28)(accounts@0.8.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@18.3.1))(viem@2.48.7(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.1))
       ethers:
         specifier: ^6.16.0
         version: 6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
