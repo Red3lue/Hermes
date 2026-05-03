@@ -16,6 +16,13 @@ const demos = [
     badge: null,
   },
   {
+    to: "/demos/selector",
+    title: "Selector",
+    subtitle: "Anima as routing manifest · agent picks the right expert",
+    desc: "The Selector reads its own encrypted Anima — a routing manifest of three expert ENS names — and dispatches your question to whichever expert fits. Edit the Anima, change the routing. Soul becomes behaviour.",
+    badge: "anima",
+  },
+  {
     to: "/biomes",
     title: "BIOME Explorer",
     subtitle: "Read any biome by ENS name",

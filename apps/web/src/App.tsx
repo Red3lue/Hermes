@@ -3,6 +3,7 @@ import PitchPage from "./pages/Pitch";
 import DemosPage from "./pages/Demos";
 import QuorumPage from "./pages/Quorum";
 import ChatbotPage from "./pages/Chatbot";
+import SelectorPage from "./pages/Selector";
 import DashboardPage from "./pages/Dashboard";
 import AgentDetailPage from "./pages/AgentDetail";
 import AgentNewPage from "./pages/AgentNew";
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/demos" element={<DemosPage />} />
         <Route path="/demos/quorum" element={<QuorumPage />} />
         <Route path="/demos/chatbot" element={<ChatbotPage />} />
+        <Route path="/demos/selector" element={<SelectorPage />} />
         <Route path="/agents/new" element={<AgentNewPage />} />
         <Route path="/agents/:ens" element={<AgentDetailPage />} />
         <Route path="/biomes" element={<BiomeListPage />} />

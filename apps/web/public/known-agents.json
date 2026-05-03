@@ -45,5 +45,29 @@
     "displayName": "Reporter",
     "tagline": "Synthesises member verdicts into the final report"
   },
+  "selector": {
+    "ens": "selector.hermes.eth",
+    "role": "selector",
+    "displayName": "Selector",
+    "tagline": "Reads its Anima as a routing manifest; picks the right expert."
+  },
+  "techExpert": {
+    "ens": "tech.experts.hermes.eth",
+    "role": "expert",
+    "displayName": "Tech Expert",
+    "tagline": "Bugs, APIs, integration, protocol, debugging."
+  },
+  "legalExpert": {
+    "ens": "legal.experts.hermes.eth",
+    "role": "expert",
+    "displayName": "Legal Expert",
+    "tagline": "ToS, privacy, contracts, IP, regulation."
+  },
+  "productExpert": {
+    "ens": "product.experts.hermes.eth",
+    "role": "expert",
+    "displayName": "Product Expert",
+    "tagline": "Features, UX, pricing, comparisons."
+  },
   "demoBiome": { "ens": "quorumv2.biomes.hermes.eth" }
 }
