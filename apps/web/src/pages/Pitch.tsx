@@ -84,23 +84,65 @@ export default function PitchPage() {
     <HermesShell>
       {/* HERO */}
       <section className="relative px-6 pt-20 pb-28 sm:pt-28 sm:pb-32 overflow-hidden">
-        <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        {/* Free-floating background particles — drift in the gutters of the hero. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-0"
+        >
+          <span
+            className="absolute top-[18%] left-[8%] h-1.5 w-1.5 rounded-full bg-hermes-400 shadow-neon-cyan animate-drift"
+            style={{ animationDelay: "0s" }}
+          />
+          <span
+            className="absolute top-[60%] left-[14%] h-1 w-1 rounded-full bg-flux-400 shadow-neon-flux animate-drift-alt"
+            style={{ animationDelay: "1.2s" }}
+          />
+          <span
+            className="absolute top-[28%] right-[6%] h-1 w-1 rounded-full bg-hermes-300 animate-drift-alt"
+            style={{ animationDelay: "2.6s" }}
+          />
+          <span
+            className="absolute top-[78%] right-[18%] h-1.5 w-1.5 rounded-full bg-flux-300 shadow-neon-flux animate-drift"
+            style={{ animationDelay: "0.6s" }}
+          />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-hermes-500/30 bg-ink-900/60 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.22em] text-hermes-300 backdrop-blur">
+            <div
+              className="inline-flex items-center gap-2 rounded-full border border-hermes-500/30 bg-ink-900/60 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.22em] text-hermes-300 backdrop-blur animate-reveal-up"
+              style={{ animationDelay: "0ms" }}
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-hermes-400 animate-pulse shadow-neon-cyan" />
               ETHGlobal · Open Agents · ENS + 0G
             </div>
-            <h1 className="mt-6 font-display text-5xl sm:text-7xl font-bold leading-[0.95] tracking-tight">
+
+            <h1
+              className="relative mt-6 font-display text-5xl sm:text-7xl font-bold leading-[0.95] tracking-tight animate-reveal-up"
+              style={{ animationDelay: "120ms" }}
+            >
               <span className="text-gradient-neon">HERMES</span>
               <br />
               <span className="text-gray-100">PROJECT</span>
+              {/* Sweeping scan line under the title */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-2 left-0 h-px w-32 bg-gradient-to-r from-transparent via-hermes-300 to-transparent animate-scan-line"
+              />
             </h1>
-            <p className="mt-5 max-w-xl text-base sm:text-lg text-gray-400 leading-relaxed">
-              The async, end-to-end encrypted coordination layer for autonomous
-              AI agent swarms. ENS is the address book. 0G is the substrate.
-              The chain is the protocol.
+
+            <p
+              className="mt-6 max-w-xl text-base sm:text-lg text-gray-400 leading-relaxed animate-reveal-up"
+              style={{ animationDelay: "260ms" }}
+            >
+              Encrypted, ENS-addressed coordination for autonomous AI agent
+              swarms — on chain, no relays.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-4">
+
+            <div
+              className="mt-9 flex flex-wrap items-center gap-4 animate-reveal-up"
+              style={{ animationDelay: "400ms" }}
+            >
               <Link to="/demos" className="btn-neon">
                 Launch Interface →
               </Link>
@@ -112,42 +154,21 @@ export default function PitchPage() {
               >
                 npm install
               </a>
-              <a
-                href="https://github.com/Red3lue/Hermes"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-display text-xs uppercase tracking-[0.22em] text-gray-400 hover:text-hermes-300 transition-colors"
-              >
-                GitHub ↗
-              </a>
-            </div>
-
-            {/* live stats strip */}
-            <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl">
-              {[
-                { k: "9", v: "live agents" },
-                { k: "3", v: "swarm topologies" },
-                { k: "2", v: "on-chain biomes" },
-                { k: "0.1.2", v: "sdk on npm" },
-              ].map((s) => (
-                <div
-                  key={s.v}
-                  className="panel-soft px-4 py-3 text-center"
-                >
-                  <p className="font-display text-2xl font-bold text-hermes-200">
-                    {s.k}
-                  </p>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-500 mt-1">
-                    {s.v}
-                  </p>
-                </div>
-              ))}
             </div>
           </div>
 
           <div className="lg:col-span-5 flex items-center justify-center">
-            <div className="relative animate-wing-float">
-              <WingLogo size={420} hero className="drop-shadow-[0_0_45px_rgba(44,199,255,0.45)]" />
+            <div
+              className="animate-reveal-up"
+              style={{ animationDelay: "200ms" }}
+            >
+              <div className="relative animate-wing-float">
+                <WingLogo
+                  size={420}
+                  hero
+                  className="drop-shadow-[0_0_45px_rgba(44,199,255,0.45)]"
+                />
+              </div>
             </div>
           </div>
         </div>

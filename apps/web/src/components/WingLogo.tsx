@@ -39,43 +39,65 @@ export function WingLogo({ size = 28, className, hero = false }: Props) {
 
       {hero && (
         <>
-          {/* Halo */}
-          <circle cx="100" cy="100" r="92" fill={`url(#${id}-glow)`} />
-          {/* Orbital ring */}
-          <ellipse
-            cx="100"
-            cy="100"
-            rx="86"
-            ry="32"
-            fill="none"
-            stroke="rgba(44,199,255,0.35)"
-            strokeWidth="1"
-            transform="rotate(-18 100 100)"
-          />
-          <ellipse
-            cx="100"
-            cy="100"
-            rx="78"
-            ry="24"
-            fill="none"
-            stroke="rgba(196,84,255,0.35)"
-            strokeWidth="1"
-            transform="rotate(22 100 100)"
-          />
-          {/* Particles */}
+          {/* Breathing halo */}
+          <g
+            className="animate-halo-breathe"
+            style={{ transformOrigin: "100px 100px", transformBox: "fill-box" }}
+          >
+            <circle cx="100" cy="100" r="92" fill={`url(#${id}-glow)`} />
+          </g>
+
+          {/* Outer cyan orbit — rotates clockwise. Particle is a child so it
+             rides along the rotating frame, giving the appearance of an
+             orbital body tracing the ellipse. */}
+          <g
+            className="animate-spin-slow"
+            style={{ transformOrigin: "100px 100px", transformBox: "fill-box" }}
+          >
+            <ellipse
+              cx="100"
+              cy="100"
+              rx="86"
+              ry="32"
+              fill="none"
+              stroke="rgba(44,199,255,0.35)"
+              strokeWidth="1"
+              transform="rotate(-18 100 100)"
+            />
+            <circle cx="186" cy="100" r="2.2" fill="#5cd9ff" opacity="0.95" />
+          </g>
+
+          {/* Inner magenta orbit — rotates counter-clockwise. */}
+          <g
+            className="animate-spin-reverse"
+            style={{ transformOrigin: "100px 100px", transformBox: "fill-box" }}
+          >
+            <ellipse
+              cx="100"
+              cy="100"
+              rx="78"
+              ry="24"
+              fill="none"
+              stroke="rgba(196,84,255,0.35)"
+              strokeWidth="1"
+              transform="rotate(22 100 100)"
+            />
+            <circle cx="22" cy="100" r="1.8" fill="#c454ff" opacity="0.95" />
+          </g>
+
+          {/* Static decorative particles (twinkle via halo). */}
           {[
-            [22, 110],
-            [180, 88],
-            [154, 156],
-            [44, 60],
-            [120, 24],
-          ].map(([cx, cy], i) => (
+            [44, 60, "#5cd9ff"],
+            [156, 158, "#c454ff"],
+            [120, 24, "#5cd9ff"],
+          ].map(([cx, cy, fill], i) => (
             <circle
               key={i}
-              cx={cx}
-              cy={cy}
-              r={i % 2 === 0 ? 1.6 : 1}
-              fill={i % 3 === 0 ? "#c454ff" : "#5cd9ff"}
+              cx={cx as number}
+              cy={cy as number}
+              r={i === 1 ? 1.6 : 1.2}
+              fill={fill as string}
+              className="animate-pulse"
               opacity="0.85"
             />
           ))}
