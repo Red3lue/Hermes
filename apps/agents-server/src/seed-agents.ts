@@ -98,9 +98,11 @@ const inboxContract = asAddress(
 );
 const parentEns = optional("HERMES_PARENT_ENS") ?? "hermes.eth";
 
-// Agents are registered under hermes.eth. The ordering matters:
-// `version` is the seed value passed to generateKeyPairFromSignature so the
-// X25519 keypair is deterministic across runs. Do NOT reorder this list.
+// Agents are registered under hermes.eth (or under a sub-namespace like
+// experts.hermes.eth). The ordering matters: `version` is the seed
+// passed to generateKeyPairFromSignature so the X25519 keypair is
+// deterministic across runs. Do NOT reorder existing entries; only
+// append new ones.
 const agents: Array<{ slug: string; ens: string }> = [
   { slug: "concierge", ens: "concierge.hermes.eth" },
   { slug: "architect", ens: "architect.hermes.eth" },
@@ -110,7 +112,20 @@ const agents: Array<{ slug: string; ens: string }> = [
   { slug: "futurist", ens: "futurist.hermes.eth" },
   { slug: "coordinator", ens: "coordinator.hermes.eth" },
   { slug: "reporter", ens: "reporter.hermes.eth" },
+  // Selector demo (Anima-driven routing). The experts live under a
+  // dedicated sub-parent `experts.hermes.eth`; the seed script mints
+  // that parent first (see ensureExpertsParent) before minting the
+  // three child subnames.
+  { slug: "selector", ens: "selector.hermes.eth" },
+  { slug: "tech-expert", ens: "tech.experts.hermes.eth" },
+  { slug: "legal-expert", ens: "legal.experts.hermes.eth" },
+  { slug: "product-expert", ens: "product.experts.hermes.eth" },
 ];
+
+// ENS sub-parent for the expert agents. Minted as a NameWrapper
+// subname owned by the deployer so that further subnames
+// (`<role>.experts.hermes.eth`) can be created under it.
+const EXPERTS_PARENT_ENS = "experts.hermes.eth";
 
 const AGENTS_DIR =
   process.env.AGENTS_DIR ??
@@ -140,6 +155,35 @@ async function ensOwner(name: string): Promise<Address> {
 async function subnameExists(name: string): Promise<boolean> {
   const owner = await ensOwner(name);
   return owner !== "0x0000000000000000000000000000000000000000";
+}
+
+/** Idempotent: ensure `experts.hermes.eth` is minted as a NameWrapper
+ * subname owned by the deployer, so we can mint
+ * `<role>.experts.hermes.eth` children under it. Called once before any
+ * expert agent is seeded. */
+async function ensureExpertsParent(): Promise<void> {
+  if (await subnameExists(EXPERTS_PARENT_ENS)) {
+    console.log(`[seed] parent ${EXPERTS_PARENT_ENS} already minted`);
+    return;
+  }
+  console.log(`[seed] minting parent ${EXPERTS_PARENT_ENS}`);
+  try {
+    const tx = await createSubname(wallet, {
+      name: EXPERTS_PARENT_ENS,
+      contract: "nameWrapper",
+      owner: deployer.address,
+    });
+    console.log(`  parent tx = ${tx}`);
+    await publicClient.waitForTransactionReceipt({ hash: tx });
+  } catch (err) {
+    console.warn(
+      `[seed] could not mint ${EXPERTS_PARENT_ENS}: ${(err as Error).message.split("\n")[0]}`,
+    );
+    console.warn(
+      `       Mint manually in app.ens.domains under hermes.eth, owner = deployer, then re-run.`,
+    );
+    throw err;
+  }
 }
 
 async function recordsAlreadyMatch(
@@ -224,10 +268,16 @@ async function main() {
   console.log(`[seed] parent   = ${parentEns}`);
   console.log(`[seed] inbox    = ${inboxContract}`);
   console.log(
-    `[seed] all 8 agents share the deployer wallet (addr ENS record);`,
+    `[seed] ${agents.length} agents share the deployer wallet (addr ENS record);`,
   );
   console.log(`       each derives a unique X25519 keypair via versioned sig.`);
   console.log(`[seed] alice/bob/carlos are exempt from this script`);
+
+  // Ensure the experts.hermes.eth sub-parent exists before any
+  // *.experts.hermes.eth child is minted.
+  if (agents.some((a) => a.ens.endsWith(`.${EXPERTS_PARENT_ENS}`))) {
+    await ensureExpertsParent();
+  }
 
   const seedAgents: SeedAgent[] = agents.map(({ slug, ens }, idx) => ({
     slug,
