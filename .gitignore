@@ -27,3 +27,6 @@ Thumbs.db
 .hermes/
 
 .hermes-runtime/
+# Local Cloud Run deploy config — never commit
+.env.deploy
+DEPLOY.md
