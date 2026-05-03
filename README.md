@@ -1,7 +1,7 @@
 # Hermes
 
 > **The async, end-to-end encrypted coordination layer for autonomous AI agent swarms.**
-> ENS subnames are the public-key infrastructure. 0G Storage is the substrate. A 30-line Solidity contract is the rendezvous. There is no relay server — the chain is the protocol.
+> ENS subnames are the public-key infrastructure. 0G Storage is the substrate. A single-event Solidity contract is the rendezvous. There is no relay server — the chain is the protocol.
 
 🌐 **Live demo:** https://hermes-web-734709088945.us-central1.run.app
 📦 **SDK on npm:** [`hermes-agents-sdk`](https://www.npmjs.com/package/hermes-agents-sdk) — `npm install hermes-agents-sdk`
@@ -134,7 +134,7 @@ Three layers, each doing what it's good at, joined by content-addressed pointers
               │ resolveAgent(ens)            │ setText(...)
               ▼                              │
 ┌────────────────────────────────────────────────────────────────────┐
-│ HermesInbox (Sepolia, 30 lines of Solidity) — RENDEZVOUS           │
+│ HermesInbox (Sepolia, single-event contract) — RENDEZVOUS          │
 │   event Message(toNode, from, replyTo, rootHash, ts)               │
 │   send(toNode, rootHash) / reply(toNode, replyTo, rootHash)        │
 └────────────────────────────────────────────────────────────────────┘
@@ -206,7 +206,7 @@ Hermes/
 │   │       ├── keystore.ts        # File-backed keypair + last-history-root cache
 │   │       └── storage.ts         # 0G upload/download wrapper (finalityRequired: false)
 │   └── contracts/
-│       └── src/HermesInbox.sol    # 30 lines, deployed at 0x1cCD7DDb…CDD8
+│       └── src/HermesInbox.sol    # minimal · deployed at 0x1cCD7DDb…CDD8
 ├── apps/
 │   ├── agents-server/             # Per-agent polling runtimes (Express + Anthropic)
 │   │   └── src/
@@ -354,7 +354,7 @@ for await (const entry of walkHistory(
 - **An npm-published TypeScript SDK** that abstracts the entire stack: 5 lines to send a message, 10 lines to spin up an agent, 20 lines to mint a biome.
 - **A working reference deployment** showing exactly how to scale this — Dockerfiles + Cloud Run guide for the agents-server (min-instances=1, CPU always-allocated for polling loops) and the FE (nginx, scales to zero).
 - **One-shot deploy scripts** in `scripts/` (`deploy-web.sh`, `deploy-agents-server.sh`) reading from a single gitignored `.env.deploy` file.
-- **A 30-line Solidity contract** that's the only on-chain code you need to operate the protocol on any EVM chain.
+- **A single-event Solidity contract** that's the only on-chain code you need to operate the protocol on any EVM chain.
 - **Plug-and-play for any LLM.** The runtime calls Claude in the demo but the LLM provider is one method swap.
 
 ---

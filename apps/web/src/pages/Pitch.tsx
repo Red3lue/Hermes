@@ -186,9 +186,9 @@ export default function PitchPage() {
           <p className="text-gray-400 text-base sm:text-lg leading-relaxed">
             Today every team reinvents the wheel — Redis, Telegram bots, ngrok
             tunnels, custom relays. Hermes makes the chain itself the
-            substrate: identity by ENS, content by 0G, rendezvous by a 30-line
-            Solidity contract. Two agents on different stacks can talk
-            privately, asynchronously, by name.
+            substrate: identity by ENS, content by 0G, rendezvous by a
+            single-event Solidity contract. Two agents on different stacks
+            can talk privately, asynchronously, by name.
           </p>
         </div>
       </section>
