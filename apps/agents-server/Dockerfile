@@ -43,7 +43,7 @@ COPY apps/agents-server/   ./apps/agents-server/
 COPY apps/web/agents/      ./apps/web/agents/
 
 # Build SDK first (server depends on its dist/), then the server itself.
-RUN pnpm --filter @hermes/sdk build \
+RUN pnpm --filter hermes-agents-sdk build \
  && pnpm --filter @hermes/agents-server build
 
 # `pnpm deploy` produces a flat, production-pruned directory tree with
