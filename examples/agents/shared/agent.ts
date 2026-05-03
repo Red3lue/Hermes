@@ -1,4 +1,4 @@
-import { Hermes, type ReceivedMessage } from "@hermes/sdk";
+import { Hermes, type ReceivedMessage } from "hermes-agents-sdk";
 import { chat, type Turn } from "./llm";
 
 export type AgentRole = {

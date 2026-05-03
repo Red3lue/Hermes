@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { setAgentRecords } from "@hermes/sdk";
+import { setAgentRecords } from "hermes-agents-sdk";
 import { useWallet } from "./useWallet";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
 import {

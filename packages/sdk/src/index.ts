@@ -1,5 +1,4 @@
 export {
-  resolveEnsRecord,
   resolveAgent,
   setAgentRecords,
   type AgentRecords,

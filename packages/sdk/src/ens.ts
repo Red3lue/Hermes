@@ -3,7 +3,6 @@ import {
   getEnsText,
   getEnsAddress,
   getEnsResolver,
-  type GetEnsTextReturnType,
 } from "viem/ens";
 import {
   namehash,
@@ -11,7 +10,6 @@ import {
   encodePacked,
   type PublicClient,
 } from "viem";
-import { client as defaultClient } from "./config/config.js";
 
 // Minimal ENS PublicResolver ABI — only what we need for setting records.
 // Bypasses @ensdomains/ensjs/wallet which breaks under viem 2.x peer skew.
@@ -54,16 +52,6 @@ export type AgentRecords = {
   pubkey: string;
   inbox: string;
 };
-
-export async function resolveEnsRecord(
-  name: string,
-  key: string,
-): Promise<GetEnsTextReturnType> {
-  const normalizedName = normalize(name);
-  const value = await getEnsText(defaultClient, { name: normalizedName, key });
-  console.log(`ENS record ${key} for ${name}: ${value}`);
-  return value;
-}
 
 export async function resolveAgent(
   name: string,

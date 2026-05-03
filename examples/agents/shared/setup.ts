@@ -2,7 +2,7 @@ import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { addEnsContracts } from "@ensdomains/ensjs";
-import { Hermes, type HermesConfig } from "@hermes/sdk";
+import { Hermes, type HermesConfig } from "hermes-agents-sdk";
 
 const ensChain = addEnsContracts(sepolia);
 

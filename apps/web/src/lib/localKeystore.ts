@@ -1,4 +1,4 @@
-import type { KeyPair } from "@hermes/sdk";
+import type { KeyPair } from "hermes-agents-sdk";
 
 const DB_NAME = "hermes-keystore";
 const STORE = "keypairs";

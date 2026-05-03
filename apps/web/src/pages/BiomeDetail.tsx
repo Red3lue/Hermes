@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { getEnsAddress, normalize } from "viem/ens";
-import { unwrapKey } from "@hermes/sdk";
+import { unwrapKey } from "hermes-agents-sdk";
 import { useBiome } from "@/hooks/useBiome";
 import { useWallet } from "@/hooks/useWallet";
 import { useUserAgent } from "@/hooks/useUserAgent";

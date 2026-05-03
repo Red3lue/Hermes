@@ -5,10 +5,10 @@ import {
   resolveAgent,
   ZeroGStorage,
   type BiomeDoc,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { publicClient } from "@/lib/chainConfig";
 import { useWallet } from "@/hooks/useWallet";
-import type { KeyPair } from "@hermes/sdk";
+import type { KeyPair } from "hermes-agents-sdk";
 
 // The browser can't safely use ZeroGStorage (needs a private key on the
 // signer). For owner-side biome edits we still call the SDK's addMember /

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@0gfoundation/0g-ts-sdk": "^1.2.6",
-    "@hermes/sdk": "workspace:*",
+    "hermes-agents-sdk": "workspace:*",
     "@reown/appkit": "^1.8.19",
     "@reown/appkit-adapter-wagmi": "^1.8.19",
     "@tanstack/react-query": "^5.100.7",

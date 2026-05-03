@@ -1,5 +1,5 @@
 import { Router, type Router as ExpressRouter } from "express";
-import { resolveBiomeRecords, ZeroGStorage } from "@hermes/sdk";
+import { resolveBiomeRecords, ZeroGStorage } from "hermes-agents-sdk";
 import { getPublicClient } from "../chain.js";
 
 export const contextRouter: ExpressRouter = Router();

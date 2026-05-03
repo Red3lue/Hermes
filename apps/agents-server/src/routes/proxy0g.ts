@@ -1,5 +1,5 @@
 import { Router, type Router as ExpressRouter } from "express";
-import { ZeroGStorage } from "@hermes/sdk";
+import { ZeroGStorage } from "hermes-agents-sdk";
 
 export const proxy0gRouter: ExpressRouter = Router();
 

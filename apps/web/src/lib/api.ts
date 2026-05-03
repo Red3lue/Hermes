@@ -7,7 +7,7 @@ const BASE = import.meta.env.VITE_AGENTS_SERVER_URL ?? "http://localhost:8787";
 //   - GET /blob/:root, POST /blob — 0G upload/download proxy (deployer pays)
 //
 // All quorum + chatbot message flow runs on chain (0G + Sepolia HermesInbox).
-// The browser uses @hermes/sdk + viem directly. There is no /quorum, /chatbot,
+// The browser uses hermes-agents-sdk + viem directly. There is no /quorum, /chatbot,
 // or /biome/:name/context HTTP endpoint anymore.
 
 export type AgentInfo = {

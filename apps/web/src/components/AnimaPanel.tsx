@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { keccak256, toBytes } from "viem";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
-import { decryptMessage } from "@hermes/sdk";
+import { decryptMessage } from "hermes-agents-sdk";
 import { peekAnimaFE, publishAnima } from "@/lib/animaClient";
 import { effectiveOwner } from "@/lib/ensSubnames";
 import { useWallet } from "@/hooks/useWallet";

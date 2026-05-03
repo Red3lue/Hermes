@@ -8,7 +8,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "@hermes/sdk": "workspace:*",
+    "hermes-agents-sdk": "workspace:*",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5"
   },

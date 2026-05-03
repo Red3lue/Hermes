@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { resolveAgent, type AgentRecords } from "@hermes/sdk";
+import { resolveAgent, type AgentRecords } from "hermes-agents-sdk";
 import { useAgentInbox } from "@/hooks/useAgentInbox";
 import { useWallet } from "@/hooks/useWallet";
 import { useKnownAgents } from "@/hooks/useKnownAgents";

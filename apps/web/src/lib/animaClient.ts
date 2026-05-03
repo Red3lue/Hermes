@@ -19,7 +19,7 @@ import {
   type AnimusDoc,
   type UnsignedAnimaDoc,
   type UnsignedAnimusDoc,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { publicClient } from "./chainConfig";
 import { downloadBlob } from "./browserStorage";
 

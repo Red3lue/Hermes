@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { resolveBiomeRecords, readInbox, type InboxMessage, type InboxConfig } from "@hermes/sdk";
+import { resolveBiomeRecords, readInbox, type InboxMessage, type InboxConfig } from "hermes-agents-sdk";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
 import { downloadBlob } from "@/lib/browserStorage";
 

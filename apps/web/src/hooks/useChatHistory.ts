@@ -3,7 +3,7 @@ import {
   walkHistory,
   resolveAgent,
   type ManifestEntry,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { publicClient } from "@/lib/chainConfig";
 import { downloadBlob } from "@/lib/browserStorage";
 

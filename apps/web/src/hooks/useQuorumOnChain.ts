@@ -7,7 +7,7 @@ import {
   readInbox,
   type Envelope,
   type BiomeDoc,
-} from "@hermes/sdk";
+} from "hermes-agents-sdk";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
 import { downloadBlob } from "@/lib/browserStorage";
 import {
