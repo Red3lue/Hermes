@@ -9,29 +9,35 @@ type Props = {
 
 export function BiomeCard({ name, goal, memberCount, isOwner }: Props) {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 flex flex-col gap-3">
+    <Link
+      to={`/biomes/${encodeURIComponent(name)}`}
+      className="panel-soft card-hover-flux group block p-4"
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-semibold text-sm truncate">{name}</p>
-          {goal && <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{goal}</p>}
+          <p className="font-display text-sm font-semibold tracking-wide text-gray-100 truncate group-hover:text-flux-200 transition-colors">
+            {name}
+          </p>
+          {goal && (
+            <p className="text-xs text-gray-500 line-clamp-2 mt-1 leading-snug">
+              {goal}
+            </p>
+          )}
         </div>
-        {isOwner && (
-          <span className="flex-shrink-0 text-xs rounded border border-hermes-800 text-hermes-400 px-1.5 py-0.5">
-            owner
+        {isOwner && <span className="pill-flux flex-shrink-0">owner</span>}
+      </div>
+      <div className="mt-3 flex items-center justify-between">
+        {memberCount !== undefined ? (
+          <span className="text-[11px] font-mono text-gray-500">
+            {memberCount} members
           </span>
+        ) : (
+          <span />
         )}
-      </div>
-      <div className="flex items-center justify-between">
-        {memberCount !== undefined && (
-          <span className="text-xs font-mono text-gray-600">{memberCount} members</span>
-        )}
-        <Link
-          to={`/biomes/${encodeURIComponent(name)}`}
-          className="ml-auto text-sm text-hermes-400 hover:text-hermes-300 transition-colors"
-        >
+        <span className="text-xs font-display uppercase tracking-widest text-flux-300 group-hover:text-flux-200">
           Open →
-        </Link>
+        </span>
       </div>
-    </div>
+    </Link>
   );
 }

@@ -6,11 +6,160 @@
   color-scheme: dark;
 }
 
+html, body, #root {
+  min-height: 100%;
+  background-color: #05070f;
+}
+
 body {
-  @apply bg-gray-950 text-gray-100 antialiased;
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  @apply bg-ink-950 text-gray-100 antialiased;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(44, 199, 255, 0.14), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 0%, rgba(196, 84, 255, 0.10), transparent 70%),
+    linear-gradient(to bottom, #05070f, #07091a 60%, #05070f);
+  background-attachment: fixed;
 }
 
 code, pre, .mono {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
+
+.font-display {
+  font-family: 'Orbitron', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================ */
+/* Reusable component classes — neon panels, buttons, dividers. */
+/* ============================================================ */
+@layer components {
+  /* Background grid wash for full-page hero sections. */
+  .bg-hermes-grid {
+    background-image:
+      linear-gradient(to right, rgba(44, 199, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(44, 199, 255, 0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+    background-position: center top;
+  }
+
+  /* Neon double border on a panel — outer cyan glow + inner subtle bg. */
+  .panel-neon {
+    @apply relative rounded-xl border border-hermes-700/40 bg-ink-900/70 backdrop-blur-sm;
+    box-shadow:
+      0 0 0 1px rgba(44, 199, 255, 0.06),
+      0 0 24px rgba(44, 199, 255, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .panel-neon-flux {
+    @apply relative rounded-xl border border-flux-700/40 bg-ink-900/70 backdrop-blur-sm;
+    box-shadow:
+      0 0 0 1px rgba(196, 84, 255, 0.06),
+      0 0 24px rgba(196, 84, 255, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .panel-soft {
+    @apply rounded-xl border border-ink-700/70 bg-ink-900/60 backdrop-blur-sm;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  }
+
+  /* Text gradient for hero titles. */
+  .text-gradient-neon {
+    background: linear-gradient(120deg, #5cd9ff 0%, #2cc7ff 35%, #c454ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% 100%;
+    animation: shimmer 8s linear infinite;
+  }
+
+  /* Primary neon CTA. */
+  .btn-neon {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-md font-display font-semibold uppercase tracking-widest text-white px-6 py-3 text-sm;
+    background: linear-gradient(135deg, #00b6ff 0%, #6a1bb0 110%);
+    border: 1px solid rgba(44, 199, 255, 0.6);
+    box-shadow:
+      0 0 18px rgba(44, 199, 255, 0.45),
+      inset 0 0 12px rgba(196, 84, 255, 0.25);
+    transition: transform 120ms ease, box-shadow 200ms ease;
+  }
+  .btn-neon:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 32px rgba(44, 199, 255, 0.7),
+      inset 0 0 18px rgba(196, 84, 255, 0.4);
+  }
+  .btn-neon:disabled {
+    opacity: 0.5;
+    transform: none;
+    box-shadow: 0 0 8px rgba(44, 199, 255, 0.2);
+    cursor: not-allowed;
+  }
+
+  /* Ghost neon button — outline only. */
+  .btn-ghost-neon {
+    @apply inline-flex items-center justify-center gap-2 rounded-md font-display font-semibold uppercase tracking-widest text-hermes-200 px-5 py-2.5 text-xs border;
+    border-color: rgba(44, 199, 255, 0.45);
+    background: rgba(8, 36, 63, 0.4);
+    transition: border-color 200ms, color 200ms, box-shadow 200ms;
+  }
+  .btn-ghost-neon:hover {
+    color: #c6f4ff;
+    border-color: rgba(44, 199, 255, 0.9);
+    box-shadow: 0 0 14px rgba(44, 199, 255, 0.4);
+  }
+
+  /* Neon pill for tags / badges. */
+  .pill-cyan {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-hermes-500/50 bg-hermes-950/50 px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-widest text-hermes-200;
+  }
+  .pill-flux {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-flux-500/50 bg-flux-950/50 px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-widest text-flux-200;
+  }
+  .pill-mint {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-mint-500/50 bg-mint-500/10 px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-widest text-mint-400;
+  }
+
+  /* Section heading eyebrow. */
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.3em] text-hermes-400;
+  }
+
+  /* Divider with neon glow line. */
+  .neon-hr {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(44, 199, 255, 0.5) 30%,
+      rgba(196, 84, 255, 0.4) 70%,
+      transparent 100%
+    );
+  }
+
+  /* Card hover glow used by feature cards. */
+  .card-hover-cyan {
+    transition: border-color 200ms, box-shadow 250ms, transform 200ms;
+  }
+  .card-hover-cyan:hover {
+    border-color: rgba(44, 199, 255, 0.6);
+    box-shadow: 0 0 24px rgba(44, 199, 255, 0.18);
+    transform: translateY(-2px);
+  }
+  .card-hover-flux:hover {
+    border-color: rgba(196, 84, 255, 0.6);
+    box-shadow: 0 0 24px rgba(196, 84, 255, 0.18);
+    transform: translateY(-2px);
+  }
+}
+
+/* Scrollbar polish for transcript panels. */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(44, 199, 255, 0.18);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(44, 199, 255, 0.4); }

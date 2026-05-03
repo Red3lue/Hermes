@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { WalletButton } from "@/components/WalletButton";
 import { AgentAvatar } from "@/components/AgentAvatar";
+import { HermesShell } from "@/components/HermesShell";
 import { useWallet } from "@/hooks/useWallet";
 import { useUserAgent } from "@/hooks/useUserAgent";
 import { useChatbotInbox } from "@/hooks/useChatbotInbox";
@@ -432,44 +431,40 @@ export default function ChatbotPage() {
 
   const activeMeta = threads.find((t) => t.id === activeThread);
 
-  return (
-    <div className="flex h-screen flex-col bg-gray-950 text-gray-100 overflow-hidden">
-      <nav className="flex-shrink-0 border-b border-gray-800 px-4 py-3 flex items-center gap-3">
-        <Link to="/" className="font-mono font-bold text-hermes-400">
-          hermes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <Link to="/demos" className="text-gray-400 text-sm hover:text-gray-200">
-          demos
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-300 text-sm font-semibold">chatbot</span>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-600 hidden sm:block">
-            with {CONCIERGE_ENS}
-          </span>
-          {userEns && (
-            <span className="text-xs font-mono text-emerald-400 hidden md:block">
-              you: {userEns}
-            </span>
-          )}
-          <WalletButton />
-        </div>
-      </nav>
+  const rightSlot = (
+    <>
+      <span className="hidden sm:inline-flex pill-cyan">
+        with {CONCIERGE_ENS}
+      </span>
+      {userEns && (
+        <span className="hidden md:inline-flex pill-mint">
+          you · {userEns}
+        </span>
+      )}
+    </>
+  );
 
+  return (
+    <HermesShell
+      full
+      compact
+      crumbs={[{ label: "demos", to: "/demos" }, { label: "chatbot" }]}
+      rightSlot={rightSlot}
+    >
+      <div className="flex flex-1 flex-col overflow-hidden">
       {address && user.status !== "ready" && <UserSetupBanner user={user} />}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left: identity + conversations */}
-        <aside className="hidden lg:flex w-72 flex-shrink-0 flex-col border-r border-gray-800 overflow-y-auto">
-          <div className="p-4 border-b border-gray-800">
-            <div className="rounded-lg border border-hermes-800 bg-hermes-950/30 p-3 flex items-center gap-3">
-              <AgentAvatar slug="concierge" size={32} />
+        <aside className="hidden lg:flex w-72 flex-shrink-0 flex-col border-r border-hermes-700/20 overflow-y-auto bg-ink-900/40 backdrop-blur-sm">
+          <div className="p-4 border-b border-hermes-700/20">
+            <div className="panel-neon p-3 flex items-center gap-3">
+              <AgentAvatar slug="concierge" size={36} />
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-hermes-200 truncate">
+                <p className="font-display text-sm font-semibold text-hermes-200 truncate">
                   {conciergeMeta?.displayName ?? "Concierge"}
                 </p>
-                <p className="text-xs font-mono text-gray-400 truncate">
+                <p className="text-[11px] font-mono text-gray-400 truncate">
                   {CONCIERGE_ENS}
                 </p>
                 {conciergeMeta?.tagline && (
@@ -481,19 +476,17 @@ export default function ChatbotPage() {
             </div>
           </div>
 
-          <div className="p-4 border-b border-gray-800">
+          <div className="p-4 border-b border-hermes-700/20">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500">
-                Conversations
-              </h3>
+              <p className="eyebrow">Conversations</p>
               <button
                 onClick={newConversation}
-                className="text-[11px] text-hermes-400 hover:text-hermes-300 border border-hermes-800 rounded px-2 py-0.5"
+                className="text-[11px] font-mono text-hermes-300 hover:text-hermes-200 border border-hermes-500/40 hover:border-hermes-500 rounded px-2 py-0.5 transition-colors"
               >
                 + new
               </button>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {sortedThreads.map((t) => {
                 const preview = threadPreviews.get(t.id);
                 const isActive = t.id === activeThread;
@@ -501,10 +494,10 @@ export default function ChatbotPage() {
                   <button
                     key={t.id}
                     onClick={() => setActiveThread(t.id)}
-                    className={`w-full text-left rounded-md border p-2 transition-colors ${
+                    className={`w-full text-left rounded-md border p-2.5 transition-all ${
                       isActive
-                        ? "border-hermes-700 bg-hermes-950/40"
-                        : "border-gray-800 bg-gray-900 hover:border-gray-700"
+                        ? "border-hermes-500/60 bg-hermes-950/40 shadow-neon-cyan"
+                        : "border-hermes-700/20 bg-ink-900/60 hover:border-hermes-500/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -512,7 +505,7 @@ export default function ChatbotPage() {
                         {t.label}
                       </p>
                       {preview && (
-                        <span className="text-[10px] font-mono text-gray-600">
+                        <span className="text-[10px] font-mono text-gray-500">
                           {new Date(preview.lastTs).toLocaleDateString(
                             undefined,
                             { month: "short", day: "numeric" },
@@ -523,7 +516,7 @@ export default function ChatbotPage() {
                     <p className="text-[11px] text-gray-500 truncate mt-0.5">
                       {preview?.lastText ?? "no messages yet"}
                     </p>
-                    <p className="text-[10px] font-mono text-gray-700 mt-0.5">
+                    <p className="text-[10px] font-mono text-gray-600 mt-0.5">
                       {preview?.count ?? 0} msg{(preview?.count ?? 0) === 1 ? "" : "s"}
                     </p>
                   </button>
@@ -532,18 +525,18 @@ export default function ChatbotPage() {
             </div>
           </div>
 
-          <div className="p-4 border-b border-gray-800 text-xs text-gray-500 leading-relaxed">
-            <p className="mb-2 text-gray-300 font-semibold">How threads work</p>
+          <div className="p-4 text-xs text-gray-500 leading-relaxed">
+            <p className="eyebrow mb-2">How threads work</p>
             <p className="mb-2">
-              Each conversation is a <code>thread</code> tag on the
-              envelope. The concierge keeps a separate history chain per
-              (you, thread) — so old conversations stay walkable from
-              chain even on a fresh browser.
+              Each conversation is a <code className="text-hermes-300">thread</code>{" "}
+              tag on the envelope. The concierge keeps a separate history
+              chain per (you, thread) — so old conversations stay walkable
+              from chain even on a fresh browser.
             </p>
             {sent.filter((s) => s.thread === activeThread).length > 0 && (
               <button
                 onClick={clearLocalForActive}
-                className="text-gray-600 hover:text-red-400 underline-offset-2 hover:underline mt-2"
+                className="text-gray-500 hover:text-red-400 underline-offset-2 hover:underline mt-2"
               >
                 clear local cache for this conversation
               </button>
@@ -554,19 +547,15 @@ export default function ChatbotPage() {
         {/* Center: transcript + composer */}
         <main className="flex flex-1 flex-col min-w-0">
           {activeMeta && (
-            <div className="flex-shrink-0 border-b border-gray-800 px-4 py-2 bg-gray-950/60 flex items-center gap-3">
-              <span className="text-xs font-mono text-gray-500">
-                conversation:
-              </span>
+            <div className="flex-shrink-0 border-b border-hermes-700/20 px-4 py-2 bg-ink-900/50 flex items-center gap-3">
+              <span className="eyebrow">conversation</span>
               <span className="text-sm text-gray-200 font-mono">
                 {activeMeta.label}
               </span>
-              <span className="text-[10px] font-mono text-gray-700 ml-2">
+              <span className="text-[10px] font-mono text-gray-600 ml-2">
                 thread={activeThread.slice(0, 12)}
                 {activeThread.length > 12 && "…"}
               </span>
-              {/* Show the latest history root if known — proof the chain
-                  is being maintained server-side. */}
               {(() => {
                 const latestRoot = [...incoming]
                   .reverse()
@@ -576,8 +565,8 @@ export default function ChatbotPage() {
                   )?.history;
                 if (!latestRoot) return null;
                 return (
-                  <span className="text-[10px] font-mono text-gray-600 ml-auto">
-                    history root: {latestRoot.slice(0, 12)}…
+                  <span className="text-[10px] font-mono text-gray-500 ml-auto">
+                    history root · {latestRoot.slice(0, 12)}…
                   </span>
                 );
               })()}
@@ -589,15 +578,20 @@ export default function ChatbotPage() {
             className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3"
           >
             {transcript.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center text-gray-600 gap-3 py-12">
-                <p className="text-2xl">🔐</p>
-                <p className="text-sm max-w-md">
-                  Encrypted 1:1 chat with the concierge. Every message is
-                  sealed in your browser, traverses Sepolia + 0G, and
-                  arrives at <code className="text-hermes-400">{CONCIERGE_ENS}</code>.
+              <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 gap-4 py-12">
+                <span className="text-hermes-300">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="drop-shadow-[0_0_12px_rgba(44,199,255,0.5)]"><path d="M12 2a5 5 0 015 5v3h.5A2.5 2.5 0 0120 12.5v6A2.5 2.5 0 0117.5 21h-11A2.5 2.5 0 014 18.5v-6A2.5 2.5 0 016.5 10H7V7a5 5 0 015-5zm0 2a3 3 0 00-3 3v3h6V7a3 3 0 00-3-3z" fill="currentColor" fillOpacity="0.15"/></svg>
+                </span>
+                <p className="font-display text-sm uppercase tracking-[0.18em] text-gray-300">
+                  Encrypted 1:1 with the concierge
+                </p>
+                <p className="text-sm max-w-md leading-relaxed">
+                  Every message is sealed in your browser, traverses Sepolia +
+                  0G, and arrives at{" "}
+                  <code className="text-hermes-300">{CONCIERGE_ENS}</code>.
                 </p>
                 {!userEns && (
-                  <p className="text-xs text-gray-700 max-w-md">
+                  <p className="text-xs text-gray-600 max-w-md">
                     Connect a wallet and complete user setup to start.
                   </p>
                 )}
@@ -616,10 +610,10 @@ export default function ChatbotPage() {
             )}
           </div>
 
-          <div className="flex-shrink-0 border-t border-gray-800 p-4 bg-gray-950">
+          <div className="flex-shrink-0 border-t border-hermes-700/20 p-4 bg-ink-900/50 backdrop-blur-sm">
             <div className="flex gap-2 items-end">
               <textarea
-                className="flex-1 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 font-mono resize-none focus:border-hermes-600 focus:outline-none disabled:opacity-50"
+                className="flex-1 rounded-lg border border-hermes-700/40 bg-ink-900/80 px-3 py-2 text-sm text-gray-200 font-mono resize-none focus:border-hermes-400 focus:shadow-neon-cyan focus:outline-none disabled:opacity-50 transition-all"
                 rows={2}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -641,13 +635,13 @@ export default function ChatbotPage() {
                 disabled={
                   sending || !draft.trim() || user.status !== "ready"
                 }
-                className="rounded-lg bg-hermes-600 px-4 py-3 text-sm font-semibold hover:bg-hermes-500 disabled:opacity-50 transition-colors"
+                className="btn-neon"
               >
-                {sending ? "Sealing…" : "Send"}
+                {sending ? "Sealing…" : "Send →"}
               </button>
             </div>
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-[11px] font-mono text-gray-700">
+              <span className="text-[11px] font-mono text-gray-500">
                 1 wallet sig · 1 0G upload · 1 Sepolia tx · history-chained
               </span>
               {sendError && (
@@ -667,7 +661,8 @@ export default function ChatbotPage() {
           </div>
         </main>
       </div>
-    </div>
+      </div>
+    </HermesShell>
   );
 }
 
@@ -679,34 +674,34 @@ function Bubble({ bubble }: { bubble: Bubble }) {
     >
       {!isUser && (
         <div className="flex-shrink-0 mt-1">
-          <AgentAvatar slug="concierge" size={28} />
+          <AgentAvatar slug="concierge" size={30} />
         </div>
       )}
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
           isUser
-            ? "bg-hermes-600/30 border border-hermes-700 rounded-br-sm"
-            : "bg-gray-900 border border-gray-800 rounded-bl-sm"
+            ? "bg-gradient-to-br from-hermes-600/40 to-flux-700/30 border border-hermes-500/50 rounded-br-sm shadow-neon-cyan"
+            : "bg-ink-900/80 border border-hermes-700/30 rounded-bl-sm backdrop-blur-sm"
         }`}
       >
         <pre className="whitespace-pre-wrap text-sm text-gray-100 font-sans leading-relaxed">
           {bubble.text}
         </pre>
-        <div className="mt-1.5 flex gap-2 text-[10px] font-mono text-gray-600">
+        <div className="mt-1.5 flex gap-2 text-[10px] font-mono text-gray-500">
           <span>{new Date(bubble.ts).toLocaleTimeString()}</span>
           {bubble.tx && (
             <a
               href={`https://sepolia.etherscan.io/tx/${bubble.tx}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-hermes-400 hover:text-hermes-300"
+              className="text-hermes-300 hover:text-hermes-200"
             >
               tx ↗
             </a>
           )}
           {bubble.side === "concierge" && bubble.historyRoot && (
             <span title={bubble.historyRoot}>
-              prev chain: {bubble.historyRoot.slice(0, 10)}…
+              prev chain · {bubble.historyRoot.slice(0, 10)}…
             </span>
           )}
         </div>
@@ -729,16 +724,16 @@ function UserSetupBanner({ user }: { user: ReturnType<typeof useUserAgent> }) {
   const label = labels[user.status];
   if (!label) return null;
   return (
-    <div className="flex-shrink-0 px-4 py-2 border-b border-yellow-900 bg-yellow-950/20 text-sm flex items-center gap-3">
-      <span className="text-yellow-400">⚠</span>
-      <span className="text-gray-300 flex-1">{label}</span>
+    <div className="flex-shrink-0 px-4 py-2 border-b border-flux-700/30 bg-flux-950/30 text-sm flex items-center gap-3">
+      <span className="text-flux-300">⚠</span>
+      <span className="text-gray-200 flex-1">{label}</span>
       {user.error && (
         <span className="text-xs text-red-400">{user.error}</span>
       )}
       <button
         onClick={actions[user.status]}
         disabled={user.busy}
-        className="rounded-md bg-hermes-600 px-3 py-1 text-xs font-semibold hover:bg-hermes-500 disabled:opacity-50"
+        className="btn-neon !px-3 !py-1 !text-[11px]"
       >
         {user.busy ? "…" : "continue"}
       </button>

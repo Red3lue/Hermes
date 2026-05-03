@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hermes — Architecture Diagrams</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink-950: #05070f;
+      --ink-900: #080c1a;
+      --ink-800: #0f172e;
+      --hermes-200: #99e9ff;
+      --hermes-300: #5cd9ff;
+      --hermes-400: #2cc7ff;
+      --flux-300: #d885ff;
+      --flux-400: #c454ff;
+      --gray-100: #e6ebf5;
+      --gray-300: #c0c7d4;
+      --gray-400: #98a2b3;
+      --gray-500: #6c7689;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: var(--ink-950);
+      color: var(--gray-100);
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(44,199,255,0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(44,199,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 90% 60% at 50% -10%, rgba(44,199,255,0.12), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 100%, rgba(196,84,255,0.10), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 4rem 2rem 8rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--hermes-400);
+      margin-bottom: 0.8rem;
+    }
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      letter-spacing: 0.04em;
+      margin: 0;
+    }
+    .gradient {
+      background: linear-gradient(120deg, #5cd9ff 0%, #2cc7ff 35%, #c454ff 100%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shimmer 8s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    .lede {
+      margin: 1.5rem auto 0;
+      max-width: 820px;
+      color: var(--gray-300);
+      line-height: 1.6;
+      font-size: 1.05rem;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      justify-content: center;
+      margin-top: 2.5rem;
+    }
+    nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(44,199,255,0.4);
+      background: rgba(8,36,63,0.4);
+      color: var(--hermes-200);
+      text-decoration: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    nav a:hover {
+      color: var(--gray-100);
+      border-color: var(--hermes-300);
+      box-shadow: 0 0 14px rgba(44,199,255,0.45);
+    }
+    nav a.flux {
+      border-color: rgba(196,84,255,0.45);
+      color: var(--flux-300);
+    }
+    nav a.flux:hover {
+      border-color: var(--flux-400);
+      box-shadow: 0 0 14px rgba(196,84,255,0.45);
+    }
+
+    section.diagram {
+      margin: 4.5rem 0;
+    }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .section-no {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1rem;
+      color: rgba(92,217,255,0.45);
+      letter-spacing: 0.08em;
+    }
+    section.flux .section-no { color: rgba(216,133,255,0.5); }
+    h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 2.6vw, 2rem);
+      letter-spacing: 0.03em;
+      margin: 0;
+    }
+    section .blurb {
+      margin: 0.5rem 0 1.6rem;
+      color: var(--gray-400);
+      max-width: 900px;
+      line-height: 1.6;
+    }
+    section .footnote {
+      margin-top: 1.2rem;
+      padding: 0.9rem 1.2rem;
+      border-radius: 12px;
+      background: linear-gradient(120deg, rgba(44,199,255,0.08), rgba(196,84,255,0.08));
+      border: 1px solid rgba(44,199,255,0.2);
+      color: var(--gray-300);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    section.flux .footnote {
+      border-color: rgba(196,84,255,0.3);
+    }
+    section .footnote strong { color: var(--hermes-200); }
+    section.flux .footnote strong { color: var(--flux-300); }
+
+    .canvas {
+      position: relative;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background: rgba(8,12,26,0.7);
+      border: 1px solid rgba(44,199,255,0.25);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 32px rgba(44,199,255,0.06);
+      overflow-x: auto;
+    }
+    section.flux .canvas {
+      border-color: rgba(196,84,255,0.3);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 32px rgba(196,84,255,0.07);
+    }
+    .canvas svg { display: block; margin: 0 auto; max-width: 100%; }
+
+    .loading {
+      padding: 3rem 2rem;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--gray-500);
+    }
+    .help {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      pointer-events: none;
+    }
+
+    .footer {
+      margin-top: 6rem;
+      padding: 1.5rem;
+      text-align: center;
+      border-top: 1px solid rgba(44,199,255,0.15);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--gray-500);
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+
+  <main>
+    <header>
+      <p class="eyebrow">Architecture · Diagrams</p>
+      <h1><span class="gradient">HERMES</span></h1>
+      <p class="lede">
+        Five infrastructure diagrams covering the SDK, the encrypted soul layer,
+        and each live demo. Identity by ENS, content by 0G, rendezvous by a
+        single-event Solidity contract.
+      </p>
+      <nav>
+        <a href="#d1">01 · SDK</a>
+        <a href="#d2" class="flux">02 · Anima / Animus</a>
+        <a href="#d3">03 · Chatbot</a>
+        <a href="#d4">04 · Quorum</a>
+        <a href="#d5" class="flux">05 · Selector</a>
+      </nav>
+    </header>
+
+    <!-- ============== 1 — General SDK ============== -->
+    <section class="diagram" id="d1">
+      <div class="section-head">
+        <span class="section-no">01</span>
+        <h2>General SDK architecture</h2>
+      </div>
+      <p class="blurb">
+        Three layers, joined by content-addressed pointers. The SDK abstracts
+        every box on the sender and recipient sides. The only thing on chain
+        in plaintext is the recipient's namehash + the rootHash — bodies are
+        sealed end-to-end.
+      </p>
+
+      <div class="canvas">
+        <pre class="mermaid">
+flowchart TB
+    subgraph SENDER["📤 Sender · hermes-agents-sdk"]
+        S1["resolveAgent(ens)<br/>→ pubkey, inbox"]
+        S2["seal envelope<br/>nacl.box + EIP-191 sig"]
+        S3["uploadBlob → 0G"]
+        S4["appendToInbox tx"]
+    end
+
+    subgraph ENS["🪪 ENS · Sepolia"]
+        E1["addr · hermes.pubkey<br/>hermes.inbox · hermes.anima<br/>biome.root · biome.animus"]
+    end
+
+    subgraph CHAIN["⛓️ HermesInbox · Sepolia · single-event rendezvous"]
+        H1["event Message(<br/>toNode, from, replyTo,<br/>rootHash, ts)"]
+    end
+
+    subgraph ZG["☁️ 0G Storage · Galileo"]
+        Z1["sealed envelopes"]
+        Z2["HistoryManifest"]
+        Z3["AnimaDoc · AnimusDoc"]
+        Z4["BiomeDoc"]
+    end
+
+    subgraph RECIPIENT["📥 Recipient · hermes-agents-sdk"]
+        R1["readInbox<br/>filter by my namehash"]
+        R2["downloadBlob"]
+        R3["verify EIP-191 sig"]
+        R4["nacl.box.open"]
+        R5["render / reply"]
+    end
+
+    S1 -.read.-> E1
+    S2 --> S3
+    S3 -->|rootHash| Z1
+    S3 -->|rootHash| Z2
+    S4 -->|rootHash| H1
+
+    H1 -->|getLogs| R1
+    R1 --> R2
+    Z1 -->|blob| R2
+    R2 --> R3 --> R4 --> R5
+        </pre>
+      </div>
+
+      <div class="footnote">
+        <strong>What's on chain in plaintext:</strong> only the recipient's
+        namehash and the 32-byte rootHash. Bodies are sealed end-to-end with
+        X25519. No relay, no middleman.
+      </div>
+    </section>
+
+    <!-- ============== 2 — Anima / Animus ============== -->
+    <section class="diagram flux" id="d2">
+      <div class="section-head">
+        <span class="section-no">02</span>
+        <h2>Anima / Animus — encrypted souls on chain</h2>
+      </div>
+      <p class="blurb">
+        Two named, verifiable, encrypted blobs that anchor identity at the
+        <em>content</em> layer. Anima = soul of an agent (self-encrypted).
+        Animus = soul of a biome (K-encrypted). Both pinned via ENS text
+        records, both fetched fresh per request.
+      </p>
+
+      <div class="canvas">
+        <pre class="mermaid">
+flowchart TB
+    subgraph OWNER["👤 Owner Wallet"]
+        O1["sign + buildAnima<br/>nacl.box(plaintext, agent_pub, agent_sec)"]
+        O2["sign + buildAnimus<br/>nacl.secretbox(plaintext, K)"]
+    end
+
+    subgraph ENS["🪪 ENS · per-agent / per-biome"]
+        E1["text(hermes.anima)<br/>= 0G rootHash"]
+        E2["text(biome.animus)<br/>= 0G rootHash"]
+    end
+
+    subgraph ZG["☁️ 0G Storage"]
+        Z1["AnimaDoc<br/>encrypted to agent's own pubkey<br/>signed by owner"]
+        Z2["AnimusDoc<br/>encrypted with biome key K<br/>signed by owner"]
+    end
+
+    subgraph RUNTIME["🤖 Agent Runtime · per request"]
+        R1["resolveSouls()"]
+        R2["peekAnima(ens)"]
+        R3["downloadBlob"]
+        R4["decrypt with own keystore"]
+        R5["inject into LLM<br/>system prompt"]
+        R6["LLM reasons<br/>grounded in anima"]
+    end
+
+    subgraph MEMBERS["👥 Biome Members"]
+        M1["hold wrapped K"]
+        M2["decrypt Animus"]
+    end
+
+    O1 -->|encrypt + upload| Z1
+    O1 -->|setText rootHash| E1
+    O2 -->|encrypt + upload| Z2
+    O2 -->|setText rootHash| E2
+
+    R1 --> R2
+    R2 -.read.-> E1
+    R2 --> R3
+    R3 --> Z1
+    Z1 --> R4
+    R4 --> R5 --> R6
+
+    M1 --> M2
+    Z2 --> M2
+        </pre>
+      </div>
+
+      <div class="footnote">
+        <strong>Soul becomes behaviour:</strong> the Selector's
+        <code>resolveSouls()</code> runs per request. Edit the Anima → publish
+        a new rootHash → next inference uses the new manifest. Owner-only,
+        one Sepolia transaction.
+      </div>
+    </section>
+
+    <!-- ============== 3 — Chatbot ============== -->
+    <section class="diagram" id="d3">
+      <div class="section-head">
+        <span class="section-no">03</span>
+        <h2>Demo · Chatbot</h2>
+      </div>
+      <p class="blurb">
+        1:1 encrypted chat with the concierge. Each conversation is a
+        <code>thread</code> tag on the envelope; the concierge maintains a
+        separate HistoryManifest chain per <code>(user, thread)</code> so a
+        fresh browser can recover the full transcript by walking the chain.
+      </p>
+
+      <div class="canvas">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as 🌐 Browser (FE)
+    participant ENS as 🪪 ENS
+    participant Inbox as ⛓️ HermesInbox
+    participant ZG as ☁️ 0G Storage
+    participant Concierge as 🤖 Concierge Runtime
+    participant LLM as 🧠 Claude
+
+    User->>FE: Connect wallet · type "hello"
+    FE->>FE: Derive X25519 from wallet sig
+    FE->>ENS: resolve concierge.hermes.eth
+    ENS-->>FE: pubkey + inbox addr
+    FE->>FE: seal envelope (nacl.box + sig)
+    FE->>ZG: uploadBlob(envelope)
+    ZG-->>FE: rootHash R₁
+    FE->>ZG: uploadBlob(HistoryManifest H₁)
+    FE->>Inbox: send(toNode=concierge, R₁)
+    Note over Inbox: event Message emitted
+
+    loop poll every 3s
+        Concierge->>Inbox: getLogs(toNode=concierge)
+    end
+    Inbox-->>Concierge: Message{ R₁ }
+    Concierge->>ZG: downloadBlob(R₁)
+    Concierge->>Concierge: verify sig + decrypt
+
+    Concierge->>ENS: peekAnima(concierge.hermes.eth)
+    ENS-->>Concierge: anima rootHash
+    Concierge->>ZG: download AnimaDoc
+    Concierge->>Concierge: decrypt with own keystore
+
+    Concierge->>LLM: persona + anima + history + msg
+    LLM-->>Concierge: reply text
+
+    Concierge->>ZG: uploadBlob(sealed reply R₂)
+    Concierge->>ZG: uploadBlob(HistoryManifest H₂)
+    Concierge->>Inbox: send(toNode=user, R₂)
+
+    FE->>Inbox: poll inbox
+    Inbox-->>FE: Message{ R₂ }
+    FE->>ZG: downloadBlob(R₂)
+    FE->>FE: decrypt + render
+        </pre>
+      </div>
+
+      <div class="footnote">
+        <strong>Receipts:</strong> 2 Sepolia txs · 4 0G uploads · ~25–35s
+        round-trip with <code>finalityRequired: false</code> + 3s poll cadence.
+      </div>
+    </section>
+
+    <!-- ============== 4 — Quorum ============== -->
+    <section class="diagram" id="d4">
+      <div class="section-head">
+        <span class="section-no">04</span>
+        <h2>Demo · Quorum</h2>
+      </div>
+      <p class="blurb">
+        Public sealed request → coordinator dispatches to a 3-agent biome →
+        quorum deliberates in parallel → coordinator tallies + synthesises →
+        DMs final report back. Two distinct topologies in one deploy.
+      </p>
+
+      <div class="canvas">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as 🌐 Browser
+    participant Inbox as ⛓️ HermesInbox
+    participant ZG as ☁️ 0G Storage
+    participant Coord as 🤖 Coordinator
+    participant Architect as 🤖 Architect
+    participant Pragma as 🤖 Pragmatist
+    participant Skeptic as 🤖 Skeptic
+
+    User->>FE: Question
+    FE->>ZG: seal + upload (R₀)
+    FE->>Inbox: send(coordinator, R₀)
+
+    Coord->>Inbox: poll
+    Inbox-->>Coord: R₀
+    Coord->>ZG: download R₀, decrypt
+
+    par Fan-out — 3 sealed DMs in parallel
+        Coord->>ZG: seal for architect's pubkey (R₁ₐ)
+        Coord->>Inbox: send(architect, R₁ₐ)
+    and
+        Coord->>ZG: seal for pragmatist's pubkey (R₁ᵦ)
+        Coord->>Inbox: send(pragmatist, R₁ᵦ)
+    and
+        Coord->>ZG: seal for skeptic's pubkey (R₁ᵧ)
+        Coord->>Inbox: send(skeptic, R₁ᵧ)
+    end
+
+    par Members deliberate independently
+        Architect->>Architect: own anima + LLM
+        Architect->>Inbox: send(coordinator, R₂ₐ)
+    and
+        Pragma->>Pragma: own anima + LLM
+        Pragma->>Inbox: send(coordinator, R₂ᵦ)
+    and
+        Skeptic->>Skeptic: own anima + LLM
+        Skeptic->>Inbox: send(coordinator, R₂ᵧ)
+    end
+
+    Coord->>Inbox: poll, collect 3 verdicts
+    Coord->>Coord: tally + synthesise via LLM
+    Coord->>ZG: seal final report (R₃)
+    Coord->>Inbox: send(user, R₃)
+
+    FE->>Inbox: poll
+    Inbox-->>FE: Message{ R₃ }
+    FE->>FE: decrypt · render with tally pills
+        </pre>
+      </div>
+
+      <div class="footnote">
+        <strong>Receipts:</strong> 8 Sepolia txs · 8 0G uploads ·
+        agree/disagree/abstain tally on the final card.
+      </div>
+    </section>
+
+    <!-- ============== 5 — Selector ============== -->
+    <section class="diagram flux" id="d5">
+      <div class="section-head">
+        <span class="section-no">05</span>
+        <h2>Demo · Selector</h2>
+      </div>
+      <p class="blurb">
+        <strong style="color:var(--flux-300)">Anima as routing manifest.</strong>
+        The Selector reads its own ENS-pinned encrypted soul, decides which
+        expert to forward the question to, and returns the expert's reply
+        with attribution.
+      </p>
+
+      <div class="canvas">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as 🌐 Browser
+    participant Inbox as ⛓️ HermesInbox
+    participant ENS as 🪪 ENS
+    participant ZG as ☁️ 0G Storage
+    participant Sel as 🤖 Selector
+    participant Tech as 🛠️ Tech Expert
+    participant LLM as 🧠 Claude
+
+    User->>FE: "401 on every refresh — why?"
+    FE->>ZG: seal + upload (R₀)
+    FE->>Inbox: send(selector, R₀)
+
+    Sel->>Inbox: poll
+    Inbox-->>Sel: Message{ R₀ }
+    Sel->>ZG: download R₀, decrypt
+
+    rect rgba(196,84,255,0.10)
+    Note over Sel: 🔮 Anima as routing manifest
+    Sel->>ENS: peekAnima(selector.hermes.eth)
+    ENS-->>Sel: anima rootHash (latest!)
+    Sel->>ZG: download AnimaDoc
+    Sel->>Sel: decrypt with own keystore
+    end
+
+    Sel->>LLM: persona + anima + question
+    LLM-->>Sel: JSON { expert, reason }
+
+    Sel->>ZG: seal expert-request (R₁)
+    Sel->>Inbox: send(tech-expert, R₁)
+
+    Tech->>Inbox: poll
+    Tech->>ZG: download R₁, decrypt
+    Tech->>ENS: peekAnima(tech.experts.hermes.eth)
+    Tech->>ZG: download own AnimaDoc, decrypt
+    Tech->>LLM: persona + own anima + question
+    LLM-->>Tech: domain answer
+    Tech->>ZG: seal reply (R₂)
+    Tech->>Inbox: send(selector, R₂)
+
+    Sel->>Inbox: poll, get R₂, decrypt
+    Sel->>Sel: wrap with "routed to tech because…"
+    Sel->>ZG: seal final (R₃)
+    Sel->>Inbox: send(user, R₃)
+
+    FE->>Inbox: poll
+    Inbox-->>FE: Message{ R₃ }
+    FE->>FE: render · "routed to tech" pill ✨
+        </pre>
+      </div>
+
+      <div class="footnote">
+        <strong>Killer property:</strong> the highlighted block reads the
+        Anima from chain <em>every request</em>, with a rootHash-keyed cache.
+        Edit the Anima with one <code>setText</code> transaction → the
+        Selector's next inference uses the new manifest. Soul becomes
+        behaviour, on chain, owner-mutable.
+      </div>
+    </section>
+
+    <div class="footer">
+      hermes-agents-sdk · ENS + 0G + HermesInbox<br/>
+      Tip: use Cmd/Ctrl + scroll to zoom. Click any diagram to view at full size.
+    </div>
+  </main>
+
+  <div class="help">cmd/ctrl + scroll to zoom · click for full</div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs';
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        // Hermes neon palette mapped to Mermaid CSS vars.
+        background: '#080c1a',
+        primaryColor: '#0a2845',
+        primaryTextColor: '#e6ebf5',
+        primaryBorderColor: '#2cc7ff',
+        lineColor: '#5cd9ff',
+        secondaryColor: '#1c0633',
+        secondaryTextColor: '#e6ebf5',
+        secondaryBorderColor: '#c454ff',
+        tertiaryColor: '#0f172e',
+        tertiaryTextColor: '#c0c7d4',
+        tertiaryBorderColor: '#5eead4',
+        // Sequence-diagram specifics:
+        actorBkg: '#0a2845',
+        actorBorder: '#2cc7ff',
+        actorTextColor: '#e6ebf5',
+        actorLineColor: '#5cd9ff',
+        signalColor: '#5cd9ff',
+        signalTextColor: '#c0c7d4',
+        labelBoxBkgColor: '#1c0633',
+        labelBoxBorderColor: '#c454ff',
+        labelTextColor: '#e6ebf5',
+        loopTextColor: '#5cd9ff',
+        noteBkgColor: '#1c0633',
+        noteTextColor: '#d885ff',
+        noteBorderColor: '#c454ff',
+        activationBorderColor: '#2cc7ff',
+        activationBkgColor: '#0a2845',
+        sequenceNumberColor: '#080c1a',
+        // Flowchart edge labels
+        edgeLabelBackground: '#080c1a',
+      },
+      flowchart: {
+        curve: 'basis',
+        padding: 20,
+        nodeSpacing: 50,
+        rankSpacing: 70,
+      },
+      sequence: {
+        actorMargin: 60,
+        boxMargin: 12,
+        noteMargin: 12,
+        messageMargin: 38,
+        wrap: true,
+      },
+      fontFamily: "'Inter', sans-serif",
+    });
+
+    // Click-to-fullscreen on each canvas — easy for screenshotting.
+    setTimeout(() => {
+      document.querySelectorAll('.canvas').forEach((el) => {
+        el.style.cursor = 'zoom-in';
+        el.addEventListener('click', () => {
+          if (!document.fullscreenElement) el.requestFullscreen();
+          else document.exitFullscreen();
+        });
+      });
+    }, 1500);
+  </script>
+</body>
+</html>

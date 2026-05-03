@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { AgentAvatar } from "@/components/AgentAvatar";
-import { WalletButton } from "@/components/WalletButton";
+import { HermesShell } from "@/components/HermesShell";
 import { useWallet } from "@/hooks/useWallet";
 import { useUserAgent } from "@/hooks/useUserAgent";
 import { useKnownAgents } from "@/hooks/useKnownAgents";
@@ -150,47 +149,41 @@ export default function SelectorPage() {
     return 1;
   }, [activeRequest, activeResponse]);
 
-  return (
-    <div className="flex h-screen flex-col bg-gray-950 text-gray-100 overflow-hidden">
-      <nav className="flex-shrink-0 border-b border-gray-800 px-4 py-3 flex items-center gap-3">
-        <Link to="/" className="font-mono font-bold text-hermes-400">
-          hermes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <Link to="/demos" className="text-gray-400 text-sm hover:text-gray-200">
-          demos
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-300 text-sm font-semibold">selector</span>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-600 hidden sm:block">
-            via {SELECTOR_ENS}
-          </span>
-          {user.identity?.ens && (
-            <span className="text-xs font-mono text-emerald-400 hidden md:block">
-              you: {user.identity.ens}
-            </span>
-          )}
-          <WalletButton />
-        </div>
-      </nav>
+  const rightSlot = (
+    <>
+      <span className="hidden sm:inline-flex pill-flux">
+        via {SELECTOR_ENS}
+      </span>
+      {user.identity?.ens && (
+        <span className="hidden md:inline-flex pill-mint">
+          you · {user.identity.ens}
+        </span>
+      )}
+    </>
+  );
 
+  return (
+    <HermesShell
+      full
+      compact
+      crumbs={[{ label: "demos", to: "/demos" }, { label: "selector" }]}
+      rightSlot={rightSlot}
+    >
+      <div className="flex flex-1 flex-col overflow-hidden">
       {address && user.status !== "ready" && <UserSetupBanner user={user} />}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Selector + Experts roster */}
-        <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-gray-800 overflow-y-auto">
-          <div className="p-4 border-b border-gray-800">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500 mb-3">
-              Selector
-            </h2>
-            <div className="rounded-lg border border-hermes-800 bg-hermes-950/30 p-3 flex items-center gap-3">
-              <AgentAvatar slug="selector" size={32} />
+        <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-hermes-700/20 overflow-y-auto bg-ink-900/40 backdrop-blur-sm">
+          <div className="p-4 border-b border-hermes-700/20">
+            <p className="eyebrow mb-3">Selector</p>
+            <div className="panel-neon-flux p-3 flex items-center gap-3">
+              <AgentAvatar slug="selector" size={36} />
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-hermes-200 truncate">
+                <p className="font-display text-sm font-semibold text-flux-200 truncate">
                   {selectorMeta?.displayName ?? "Selector"}
                 </p>
-                <p className="text-xs font-mono text-gray-400 truncate">
+                <p className="text-[11px] font-mono text-gray-400 truncate">
                   {SELECTOR_ENS}
                 </p>
                 <p className="text-xs text-gray-500 mt-1 leading-snug">
@@ -201,24 +194,22 @@ export default function SelectorPage() {
             </div>
           </div>
 
-          <div className="p-4 border-b border-gray-800">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500 mb-3">
-              Experts ({EXPERTS.length})
-            </h2>
-            <p className="text-xs text-gray-600 mb-3 leading-relaxed">
-              Each expert has its own ENS, its own X25519 keypair, and its
-              own encrypted Anima describing its domain expertise + voice.
-              You can DM any of them directly for follow-up.
+          <div className="p-4 border-b border-hermes-700/20">
+            <p className="eyebrow mb-3">Experts · {EXPERTS.length}</p>
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              Each expert owns an ENS, an X25519 keypair, and an encrypted
+              Anima describing its domain. DM any of them directly for
+              follow-up.
             </p>
             {EXPERTS.map((e) => (
               <div
                 key={e.ens}
-                className="rounded-lg border border-gray-800 bg-gray-900 p-3 mb-2"
+                className="panel-soft card-hover-cyan p-3 mb-2"
               >
-                <p className="text-sm text-gray-200 font-semibold">
+                <p className="font-display text-sm text-gray-100 font-semibold">
                   {e.label}
                 </p>
-                <p className="text-xs font-mono text-gray-500 truncate">
+                <p className="text-[11px] font-mono text-gray-500 truncate">
                   {e.ens}
                 </p>
                 <p className="text-xs text-gray-500 mt-1 leading-snug">
@@ -229,11 +220,11 @@ export default function SelectorPage() {
           </div>
 
           <div className="p-4 text-xs text-gray-500 leading-relaxed">
-            <p className="mb-2 text-gray-300 font-semibold">How this works</p>
-            <ol className="list-decimal pl-4 space-y-1">
+            <p className="eyebrow mb-2">How this works</p>
+            <ol className="list-decimal pl-4 space-y-1.5 marker:text-hermes-400">
               <li>
                 Your question is sealed for{" "}
-                <code className="text-hermes-400">{SELECTOR_ENS}</code>'s
+                <code className="text-hermes-300">{SELECTOR_ENS}</code>'s
                 pubkey and posted on chain.
               </li>
               <li>
@@ -246,8 +237,8 @@ export default function SelectorPage() {
               </li>
               <li>
                 The Selector wraps the expert's answer with{" "}
-                <em>"routed to X because Y"</em> and returns it to your
-                inbox.
+                <em className="text-flux-300">"routed to X because Y"</em>{" "}
+                and returns it to your inbox.
               </li>
             </ol>
           </div>
@@ -256,47 +247,45 @@ export default function SelectorPage() {
         {/* Center: composer + transcript */}
         <main className="flex flex-1 flex-col min-w-0">
           {!activeRequest && (
-            <div className="flex-shrink-0 border-b border-gray-800 bg-gradient-to-br from-hermes-950/40 via-gray-950 to-gray-950 px-6 py-8">
+            <div className="flex-shrink-0 border-b border-hermes-700/20 px-6 py-10 bg-gradient-to-br from-flux-950/30 via-ink-900/40 to-ink-950">
               <div className="max-w-3xl mx-auto">
-                <span className="inline-block text-[10px] font-mono uppercase tracking-widest text-hermes-400 border border-hermes-700/60 bg-hermes-950/40 rounded-full px-2.5 py-0.5 mb-3">
+                <span className="pill-flux mb-4">
                   Anima as routing manifest
                 </span>
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 leading-tight">
+                <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-100 leading-tight">
                   Ask the Selector.
                   <br />
-                  <span className="text-hermes-400">It picks the right expert.</span>
+                  <span className="text-gradient-neon">It picks the right expert.</span>
                 </h1>
                 <p className="mt-4 text-gray-400 leading-relaxed max-w-2xl">
-                  The Selector is an ENS-named agent whose <strong className="text-gray-200">Anima</strong>{" "}
-                  is a routing manifest. It reads its own soul to decide
-                  which expert to forward your question to — and returns
-                  their answer with full attribution. Edit the Anima
-                  (in the Dashboard, only the agent's owner can), and
-                  routing behaviour changes at runtime, on chain.
+                  The Selector is an ENS-named agent whose{" "}
+                  <strong className="text-flux-200">Anima</strong> is a routing
+                  manifest. It reads its own soul to decide which expert to
+                  forward your question to — and returns their answer with
+                  full attribution. Edit the Anima (only the agent's owner
+                  can) and routing behaviour changes at runtime, on chain.
                 </p>
               </div>
             </div>
           )}
 
           {/* Composer */}
-          <div className="flex-shrink-0 border-b border-gray-800 p-4 sm:p-6">
+          <div className="flex-shrink-0 border-b border-hermes-700/20 p-4 sm:p-6 bg-ink-900/30">
             <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-200">
+                <h3 className="font-display text-sm uppercase tracking-[0.2em] text-gray-200">
                   Ask the Selector
                 </h3>
-                <span className="text-[10px] font-mono uppercase tracking-widest rounded px-2 py-0.5 border border-emerald-700 text-emerald-400">
-                  public · sealed DM
-                </span>
+                <span className="pill-mint">public · sealed DM</span>
               </div>
               <p className="text-xs text-gray-500 mb-3 leading-relaxed">
                 Anyone with a{" "}
-                <code className="text-hermes-400">*.users.hermes.eth</code>{" "}
+                <code className="text-hermes-300">*.users.hermes.eth</code>{" "}
                 subdomain can ask. Try a tech bug, a privacy question, or a
                 pricing comparison — the Selector will route accordingly.
               </p>
               <textarea
-                className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm text-gray-200 font-mono resize-none focus:border-hermes-600 focus:outline-none disabled:opacity-50 transition-colors"
+                className="w-full rounded-lg border border-hermes-700/40 bg-ink-900/80 p-3 text-sm text-gray-200 font-mono resize-none focus:border-hermes-400 focus:shadow-neon-cyan focus:outline-none disabled:opacity-50 transition-all"
                 rows={4}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -305,7 +294,7 @@ export default function SelectorPage() {
               />
               <div className="flex items-center gap-3 mt-3 flex-wrap">
                 <button
-                  className="rounded-md bg-hermes-600 px-4 py-2 text-sm font-semibold hover:bg-hermes-500 disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-neon !px-5 !py-2.5"
                   onClick={submit}
                   disabled={
                     submitting || !draft.trim() || user.status !== "ready"
@@ -317,10 +306,10 @@ export default function SelectorPage() {
                       sending…
                     </>
                   ) : (
-                    "Seal & send to Selector"
+                    "Seal & send →"
                   )}
                 </button>
-                <span className="text-[11px] font-mono text-gray-600">
+                <span className="text-[11px] font-mono text-gray-500">
                   1 wallet sig · 1 0G upload · 1 Sepolia tx
                 </span>
                 {submitError && (
@@ -349,28 +338,26 @@ export default function SelectorPage() {
               {activeRequest && (
                 <>
                   {/* Question card */}
-                  <div className="rounded-lg border border-hermes-800 bg-hermes-950/30 p-4">
+                  <div className="panel-neon-flux p-5">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-mono uppercase tracking-widest text-hermes-300">
-                        Your question
-                      </p>
-                      <span className="text-xs font-mono text-gray-600">
+                      <p className="eyebrow text-flux-300">Your question</p>
+                      <span className="text-[11px] font-mono text-gray-500">
                         #{activeRequest.requestId.slice(0, 8)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-100 whitespace-pre-wrap leading-relaxed">
                       {activeRequest.markdown}
                     </p>
-                    <div className="mt-3 pt-3 border-t border-hermes-900/50 flex flex-wrap gap-3 text-[11px] font-mono text-gray-600">
+                    <div className="mt-4 pt-3 border-t border-flux-900/40 flex flex-wrap gap-3 text-[11px] font-mono text-gray-500">
                       <a
                         href={`https://sepolia.etherscan.io/tx/${activeRequest.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-hermes-400 hover:text-hermes-300"
+                        className="text-hermes-300 hover:text-hermes-200"
                       >
                         request tx ↗ {activeRequest.txHash.slice(0, 12)}…
                       </a>
-                      <span>0G root: {activeRequest.rootHash.slice(0, 14)}…</span>
+                      <span>0G root · {activeRequest.rootHash.slice(0, 14)}…</span>
                       <span>
                         sent {new Date(activeRequest.submittedAt).toLocaleTimeString()}
                       </span>
@@ -379,8 +366,8 @@ export default function SelectorPage() {
 
                   {/* Working spinner */}
                   {progressStep === 1 && (
-                    <div className="rounded-md border border-yellow-900/50 bg-yellow-950/20 p-3 text-sm text-yellow-300/80 flex items-center gap-3">
-                      <span className="animate-pulse">●</span>
+                    <div className="rounded-md border border-flux-700/40 bg-flux-950/30 p-3 text-sm text-flux-200 flex items-center gap-3">
+                      <span className="animate-pulse text-flux-400">●</span>
                       <span>
                         Selector is decrypting and choosing the right expert…
                       </span>
@@ -389,29 +376,27 @@ export default function SelectorPage() {
 
                   {/* Final response with routing pill */}
                   {activeResponse && (
-                    <div className="rounded-lg border border-emerald-800 bg-emerald-950/20 p-5">
+                    <div className="panel-neon p-5">
                       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                        <h4 className="text-xs font-mono font-semibold uppercase tracking-widest text-emerald-300">
-                          Selector → you
-                        </h4>
-                        <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-emerald-700 bg-emerald-500/15 text-emerald-300">
+                        <p className="eyebrow text-mint-400">Selector → you</p>
+                        <span className="pill-mint">
                           routed to {activeResponse.expertEns.split(".")[0]}
                         </span>
                       </div>
                       <pre className="whitespace-pre-wrap text-sm text-gray-100 font-sans leading-relaxed">
                         {activeResponse.markdown}
                       </pre>
-                      <div className="mt-4 pt-3 border-t border-emerald-900 flex flex-wrap gap-3 text-[11px] font-mono text-gray-600">
+                      <div className="mt-4 pt-3 border-t border-hermes-700/20 flex flex-wrap gap-3 text-[11px] font-mono text-gray-500">
                         <a
                           href={`https://sepolia.etherscan.io/tx/${activeResponse.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-hermes-400 hover:text-hermes-300"
+                          className="text-hermes-300 hover:text-hermes-200"
                         >
                           response tx ↗ {activeResponse.txHash.slice(0, 12)}…
                         </a>
-                        <span>0G root: {activeResponse.rootHash.slice(0, 14)}…</span>
-                        <span>expert: {activeResponse.expertEns}</span>
+                        <span>0G root · {activeResponse.rootHash.slice(0, 14)}…</span>
+                        <span>expert · {activeResponse.expertEns}</span>
                         <span>
                           received{" "}
                           {new Date(activeResponse.ts).toLocaleTimeString()}
@@ -425,7 +410,8 @@ export default function SelectorPage() {
           </div>
         </main>
       </div>
-    </div>
+      </div>
+    </HermesShell>
   );
 }
 
@@ -443,14 +429,14 @@ function UserSetupBanner({ user }: { user: ReturnType<typeof useUserAgent> }) {
   const label = labels[user.status];
   if (!label) return null;
   return (
-    <div className="flex-shrink-0 px-4 py-2 border-b border-yellow-900 bg-yellow-950/20 text-sm flex items-center gap-3">
-      <span className="text-yellow-400">⚠</span>
-      <span className="text-gray-300 flex-1">{label}</span>
+    <div className="flex-shrink-0 px-4 py-2 border-b border-flux-700/30 bg-flux-950/30 text-sm flex items-center gap-3">
+      <span className="text-flux-300">⚠</span>
+      <span className="text-gray-200 flex-1">{label}</span>
       {user.error && <span className="text-xs text-red-400">{user.error}</span>}
       <button
         onClick={actions[user.status]}
         disabled={user.busy}
-        className="rounded-md bg-hermes-600 px-3 py-1 text-xs font-semibold hover:bg-hermes-500 disabled:opacity-50"
+        className="btn-neon !px-3 !py-1 !text-[11px]"
       >
         {user.busy ? "…" : "continue"}
       </button>

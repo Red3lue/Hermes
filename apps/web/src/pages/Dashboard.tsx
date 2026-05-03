@@ -5,6 +5,7 @@ import { useMyBiomes } from "@/hooks/useMyBiomes";
 import { AgentCard } from "@/components/AgentCard";
 import { BiomeCard } from "@/components/BiomeCard";
 import { WalletButton } from "@/components/WalletButton";
+import { HermesShell } from "@/components/HermesShell";
 
 export default function Dashboard() {
   const { address, isConnected } = useWallet();
@@ -16,64 +17,60 @@ export default function Dashboard() {
   } = useMyBiomes();
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Nav */}
-      <nav className="border-b border-gray-800 px-6 py-3 flex items-center gap-4">
-        <Link to="/" className="font-mono font-bold text-hermes-400">
-          hermes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-400 text-sm">dashboard</span>
-        <div className="ml-auto">
-          <WalletButton />
-        </div>
-      </nav>
-
+    <HermesShell crumbs={[{ label: "dashboard" }]}>
       {!isConnected ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6">
-          <p className="text-2xl font-bold">
-            Connect to see your agents and BIOMEs
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center px-6">
+          <p className="font-display text-3xl font-bold text-gray-100">
+            Connect to see your agents and biomes
           </p>
-          <p className="text-gray-500 max-w-sm">
-            Your agents and BIOMEs are discovered from ENS. Connect a wallet to
-            load them.
+          <p className="text-gray-400 max-w-md leading-relaxed">
+            Your agents and biomes are discovered from ENS. Connect a wallet
+            to load them.
           </p>
           <WalletButton />
         </div>
       ) : (
-        <div className="mx-auto max-w-6xl px-6 py-10">
-          {/* two-column grid */}
+        <div className="mx-auto max-w-6xl px-6 py-12">
+          <div className="mb-8">
+            <p className="eyebrow mb-2">Dashboard</p>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-100">
+              <span className="text-gradient-neon">Your network.</span>
+            </h1>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left: My Agents */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-lg">
+                <h2 className="font-display text-lg uppercase tracking-[0.18em] text-gray-200">
                   My Agents{" "}
                   {agents.length > 0 && (
-                    <span className="text-gray-500 text-sm">
-                      ({agents.length})
+                    <span className="text-gray-500 text-sm normal-case tracking-normal">
+                      · {agents.length}
                     </span>
                   )}
                 </h2>
                 <Link
                   to="/agents/new"
-                  className="text-sm text-hermes-400 hover:text-hermes-300 border border-hermes-800 rounded px-2 py-1"
+                  className="btn-ghost-neon !px-3 !py-1.5"
                 >
-                  + New agent
+                  + new agent
                 </Link>
               </div>
               {agentsLoading && (
-                <p className="text-xs text-gray-600">Discovering agents…</p>
+                <p className="text-xs font-mono text-gray-500">
+                  Discovering agents…
+                </p>
               )}
               {!agentsLoading && agents.length === 0 && (
-                <div className="rounded-xl border border-dashed border-gray-800 p-6 text-center text-gray-600 text-sm">
+                <div className="rounded-xl border border-dashed border-hermes-700/30 p-6 text-center text-gray-500 text-sm">
                   <p>
                     No agents yet. An agent is an ENS subname you own with
                     Hermes records set.
                   </p>
                   <Link
                     to="/agents/new"
-                    className="mt-3 inline-block text-hermes-400 hover:text-hermes-300"
+                    className="mt-3 inline-block text-hermes-300 hover:text-hermes-200"
                   >
                     Register your first agent →
                   </Link>
@@ -89,32 +86,34 @@ export default function Dashboard() {
             {/* Right: My BIOMEs */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-lg">
-                  My BIOMEs{" "}
+                <h2 className="font-display text-lg uppercase tracking-[0.18em] text-gray-200">
+                  My Biomes{" "}
                   {biomesAll.length > 0 && (
-                    <span className="text-gray-500 text-sm">
-                      ({biomesAll.length})
+                    <span className="text-gray-500 text-sm normal-case tracking-normal">
+                      · {biomesAll.length}
                     </span>
                   )}
                 </h2>
                 <Link
                   to="/biomes/new"
-                  className="text-sm text-hermes-400 hover:text-hermes-300 border border-hermes-800 rounded px-2 py-1"
+                  className="btn-ghost-neon !px-3 !py-1.5 !text-flux-200 !border-flux-500/45 hover:!border-flux-400 hover:!text-flux-100"
                 >
-                  + New BIOME
+                  + new biome
                 </Link>
               </div>
               {biomesLoading && (
-                <p className="text-xs text-gray-600">Discovering BIOMEs…</p>
+                <p className="text-xs font-mono text-gray-500">
+                  Discovering biomes…
+                </p>
               )}
               {!biomesLoading && biomesAll.length === 0 && (
-                <div className="rounded-xl border border-dashed border-gray-800 p-6 text-center text-gray-600 text-sm">
-                  <p>No BIOMEs yet.</p>
+                <div className="rounded-xl border border-dashed border-flux-700/30 p-6 text-center text-gray-500 text-sm">
+                  <p>No biomes yet.</p>
                   <Link
                     to="/biomes/new"
-                    className="mt-3 inline-block text-hermes-400 hover:text-hermes-300"
+                    className="mt-3 inline-block text-flux-300 hover:text-flux-200"
                   >
-                    Create your first BIOME →
+                    Create your first biome →
                   </Link>
                 </div>
               )}
@@ -130,13 +129,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Footer stats */}
-          <div className="mt-10 rounded-xl border border-gray-800 bg-gray-900 p-4 text-xs text-gray-500 text-center">
-            Connected:{" "}
-            <span className="font-mono text-gray-400">{address}</span>
+          <div className="mt-12 panel-soft p-4 text-xs font-mono text-gray-500 text-center">
+            connected ·{" "}
+            <span className="text-hermes-200">{address}</span>
           </div>
         </div>
       )}
-    </div>
+    </HermesShell>
   );
 }

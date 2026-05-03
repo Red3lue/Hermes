@@ -1,11 +1,11 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { keccak256, toBytes } from "viem";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
 import { setAgentRecords } from "hermes-agents-sdk";
 import { publishAnima } from "@/lib/animaClient";
-import { WalletButton } from "@/components/WalletButton";
+import { HermesShell } from "@/components/HermesShell";
 import { useWallet } from "@/hooks/useWallet";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
 
@@ -116,27 +116,18 @@ export default function AgentNew() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <nav className="border-b border-gray-800 px-6 py-3 flex items-center gap-4">
-        <Link to="/" className="font-mono font-bold text-hermes-400">
-          hermes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <Link
-          to="/dashboard"
-          className="text-gray-400 text-sm hover:text-gray-200"
-        >
-          dashboard
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-300 text-sm font-semibold">new agent</span>
-        <div className="ml-auto">
-          <WalletButton />
-        </div>
-      </nav>
-
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <h1 className="text-2xl font-bold mb-2">Create a new agent</h1>
+    <HermesShell
+      crumbs={[
+        { label: "dashboard", to: "/dashboard" },
+        { label: "new agent" },
+      ]}
+    >
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <p className="eyebrow mb-2">New agent</p>
+        <h1 className="font-display text-3xl font-bold text-gray-100 mb-3">
+          <span className="text-gradient-neon">Spawn</span>{" "}
+          <span className="text-gray-100">an agent.</span>
+        </h1>
         <p className="text-sm text-gray-400 mb-8 leading-relaxed">
           Mints <code>&lt;label&gt;.{AGENTS_PARENT}</code> owned by your
           wallet, derives a fresh X25519 keypair from a deterministic
@@ -148,25 +139,23 @@ export default function AgentNew() {
         </p>
 
         {!address && (
-          <div className="mb-6 rounded-lg border border-yellow-900 bg-yellow-950/20 p-3 text-sm text-yellow-300">
+          <div className="mb-6 rounded-lg border border-flux-700/40 bg-flux-950/30 p-3 text-sm text-flux-200">
             Connect your wallet to create an agent.
           </div>
         )}
 
         {/* Label */}
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-5 mb-5">
-          <label className="block text-xs font-mono uppercase tracking-widest text-gray-500 mb-2">
-            Agent label
-          </label>
+        <div className="panel-neon p-5 mb-5">
+          <label className="eyebrow block mb-2">Agent label</label>
           <div className="flex items-center gap-2">
             <input
-              className="flex-1 rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-sm font-mono focus:border-hermes-600 focus:outline-none"
+              className="flex-1 rounded-md border border-hermes-700/40 bg-ink-900/80 px-3 py-2 text-sm font-mono focus:border-hermes-400 focus:shadow-neon-cyan focus:outline-none transition-all"
               placeholder="researcher"
               value={label}
               onChange={(e) => setLabel(e.target.value.toLowerCase())}
               disabled={step.kind !== "idle" && step.kind !== "error"}
             />
-            <span className="text-sm font-mono text-gray-500">
+            <span className="text-sm font-mono text-gray-400">
               .{AGENTS_PARENT}
             </span>
           </div>
@@ -176,23 +165,23 @@ export default function AgentNew() {
             </p>
           )}
           {ens && labelOk && (
-            <p className="mt-2 text-xs font-mono text-gray-600">
-              full name: <span className="text-hermes-400">{ens}</span>
+            <p className="mt-2 text-xs font-mono text-gray-500">
+              full name · <span className="text-hermes-300">{ens}</span>
             </p>
           )}
         </div>
 
         {/* Anima (optional) */}
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-5 mb-5">
-          <label className="block text-xs font-mono uppercase tracking-widest text-gray-500 mb-2">
+        <div className="panel-neon-flux p-5 mb-5">
+          <label className="eyebrow text-flux-300 block mb-2">
             Anima — soul of the agent (optional)
           </label>
-          <p className="text-xs text-gray-600 mb-2">
-            Markdown content the agent will load before answering. Skip
-            and publish later from the agent's detail page if you prefer.
+          <p className="text-xs text-gray-500 mb-2">
+            Markdown content the agent will load before answering. Skip and
+            publish later from the agent's detail page if you prefer.
           </p>
           <textarea
-            className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-sm font-mono resize-y focus:border-hermes-600 focus:outline-none"
+            className="w-full rounded-md border border-flux-700/40 bg-ink-900/80 px-3 py-2 text-sm font-mono resize-y focus:border-flux-400 focus:shadow-neon-flux focus:outline-none transition-all"
             rows={6}
             value={animaContent}
             onChange={(e) => setAnimaContent(e.target.value)}
@@ -211,12 +200,12 @@ export default function AgentNew() {
                 step.kind !== "error" &&
                 step.kind !== "done")
             }
-            className="rounded-md bg-hermes-600 px-5 py-2.5 text-sm font-semibold hover:bg-hermes-500 disabled:opacity-50 transition-colors"
+            className="btn-neon"
           >
             {step.kind === "idle" ||
             step.kind === "error" ||
             step.kind === "done"
-              ? "Create agent"
+              ? "Create agent →"
               : stepLabel(step)}
           </button>
           {step.kind === "done" && (
@@ -224,7 +213,7 @@ export default function AgentNew() {
               onClick={() =>
                 navigate(`/agents/${encodeURIComponent(step.ens)}`)
               }
-              className="text-sm text-hermes-400 hover:text-hermes-300"
+              className="text-sm font-display uppercase tracking-widest text-hermes-300 hover:text-hermes-200"
             >
               Open {step.ens} →
             </button>
@@ -238,21 +227,21 @@ export default function AgentNew() {
         )}
 
         {step.kind === "done" && (
-          <p className="mt-3 text-sm text-emerald-400">
-            ✓ {step.ens} is live. The agent is addressable from anywhere
-            via its ENS. Re-derive its keys any time by signing the same
-            message with the same wallet.
+          <p className="mt-3 text-sm text-mint-400">
+            ✓ {step.ens} is live. The agent is addressable from anywhere via
+            its ENS. Re-derive its keys any time by signing the same message
+            with the same wallet.
           </p>
         )}
 
-        <p className="mt-6 text-xs text-gray-700 leading-relaxed">
-          Cost: 1 Sepolia tx (mint subname, paid by the deployer) · 1
-          wallet sig (derive X25519 keypair) · 1 Sepolia tx (set ENS
-          records, paid by you){animaContent.trim() &&
+        <p className="mt-6 text-xs font-mono text-gray-500 leading-relaxed">
+          Cost · 1 Sepolia tx (mint subname, paid by the deployer) · 1 wallet
+          sig (derive X25519 keypair) · 1 Sepolia tx (set ENS records, paid
+          by you){animaContent.trim() &&
             " · 1 wallet sig + 1 0G upload + 1 Sepolia tx (publish Anima)"}.
         </p>
       </div>
-    </div>
+    </HermesShell>
   );
 }
 

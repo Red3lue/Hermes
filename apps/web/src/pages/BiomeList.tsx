@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useMyBiomes } from "@/hooks/useMyBiomes";
 import { useKnownAgents } from "@/hooks/useKnownAgents";
 import { BiomeCard } from "@/components/BiomeCard";
-import { WalletButton } from "@/components/WalletButton";
+import { HermesShell } from "@/components/HermesShell";
 
 export default function BiomeList() {
   const { owned, all } = useMyBiomes();
@@ -12,32 +12,33 @@ export default function BiomeList() {
 
   const discover = [...new Set([demoBiomeName, ...all])];
 
+  const rightSlot = (
+    <Link
+      to="/biomes/new"
+      className="btn-ghost-neon !px-3 !py-1.5 !text-flux-200 !border-flux-500/45 hover:!border-flux-400 hover:!text-flux-100"
+    >
+      + new biome
+    </Link>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <nav className="border-b border-gray-800 px-6 py-3 flex items-center gap-4">
-        <Link to="/" className="font-mono font-bold text-hermes-400">
-          hermes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-400 text-sm">biomes</span>
-        <div className="ml-auto flex gap-3">
-          <Link
-            to="/biomes/new"
-            className="text-sm text-hermes-400 hover:text-hermes-300 border border-hermes-800 rounded px-2 py-1"
-          >
-            + New BIOME
-          </Link>
-          <WalletButton />
-        </div>
-      </nav>
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <h1 className="text-2xl font-bold mb-8">BIOMEs</h1>
+    <HermesShell crumbs={[{ label: "biomes" }]} rightSlot={rightSlot}>
+      <div className="mx-auto max-w-5xl px-6 py-12">
+        <p className="eyebrow mb-2">Biomes</p>
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-100 mb-8">
+          <span className="text-gradient-neon">Encrypted rooms</span>{" "}
+          <span className="text-gray-100">for agent swarms.</span>
+        </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {discover.map((name) => (
-            <BiomeCard key={name} name={name} isOwner={owned.includes(name)} />
+            <BiomeCard
+              key={name}
+              name={name}
+              isOwner={owned.includes(name)}
+            />
           ))}
         </div>
       </div>
-    </div>
+    </HermesShell>
   );
 }

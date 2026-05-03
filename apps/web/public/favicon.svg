@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="wing-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5cd9ff"/>
+      <stop offset="55%" stop-color="#2cc7ff"/>
+      <stop offset="100%" stop-color="#c454ff"/>
+    </linearGradient>
+    <radialGradient id="wing-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(44,199,255,0.55)"/>
+      <stop offset="60%" stop-color="rgba(44,199,255,0.12)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+    <filter id="wing-blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.4"/>
+    </filter>
+  </defs>
+
+  <rect width="200" height="200" rx="36" fill="#05070f"/>
+  <circle cx="100" cy="100" r="92" fill="url(#wing-glow)"/>
+
+  <g filter="url(#wing-blur)" opacity="0.75">
+    <g fill="none" stroke="url(#wing-grad)" stroke-width="4" stroke-linecap="round">
+      <path d="M100 40 L100 160"/>
+      <path d="M100 100 C 110 86, 124 76, 140 70"/>
+      <path d="M100 100 C 116 84, 138 70, 162 60"/>
+      <path d="M100 100 C 122 80, 152 64, 184 50"/>
+      <path d="M100 100 C 118 92, 142 92, 168 92"/>
+      <path d="M100 100 C 116 110, 142 116, 172 116"/>
+      <path d="M100 100 C 112 120, 130 138, 152 152"/>
+      <path d="M100 100 C 110 86, 124 76, 140 70" transform="matrix(-1 0 0 1 200 0)"/>
+      <path d="M100 100 C 116 84, 138 70, 162 60" transform="matrix(-1 0 0 1 200 0)"/>
+      <path d="M100 100 C 122 80, 152 64, 184 50" transform="matrix(-1 0 0 1 200 0)"/>
+      <path d="M100 100 C 118 92, 142 92, 168 92" transform="matrix(-1 0 0 1 200 0)"/>
+      <path d="M100 100 C 116 110, 142 116, 172 116" transform="matrix(-1 0 0 1 200 0)"/>
+      <path d="M100 100 C 112 120, 130 138, 152 152" transform="matrix(-1 0 0 1 200 0)"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke="url(#wing-grad)" stroke-width="1.6" stroke-linecap="round">
+    <path d="M100 40 L100 160"/>
+    <path d="M100 100 C 110 86, 124 76, 140 70"/>
+    <path d="M100 100 C 116 84, 138 70, 162 60"/>
+    <path d="M100 100 C 122 80, 152 64, 184 50"/>
+    <path d="M100 100 C 118 92, 142 92, 168 92"/>
+    <path d="M100 100 C 116 110, 142 116, 172 116"/>
+    <path d="M100 100 C 112 120, 130 138, 152 152"/>
+    <path d="M100 100 C 110 86, 124 76, 140 70" transform="matrix(-1 0 0 1 200 0)"/>
+    <path d="M100 100 C 116 84, 138 70, 162 60" transform="matrix(-1 0 0 1 200 0)"/>
+    <path d="M100 100 C 122 80, 152 64, 184 50" transform="matrix(-1 0 0 1 200 0)"/>
+    <path d="M100 100 C 118 92, 142 92, 168 92" transform="matrix(-1 0 0 1 200 0)"/>
+    <path d="M100 100 C 116 110, 142 116, 172 116" transform="matrix(-1 0 0 1 200 0)"/>
+    <path d="M100 100 C 112 120, 130 138, 152 152" transform="matrix(-1 0 0 1 200 0)"/>
+  </g>
+
+  <circle cx="100" cy="40" r="2.6" fill="#5cd9ff"/>
+  <circle cx="100" cy="160" r="2.6" fill="#c454ff"/>
+</svg>

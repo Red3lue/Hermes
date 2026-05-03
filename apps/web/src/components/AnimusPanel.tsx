@@ -113,20 +113,18 @@ export function AnimusPanel({
   }
 
   return (
-    <div className="rounded-lg border border-purple-900/50 bg-purple-950/10 p-4">
+    <div className="panel-neon-flux p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-mono font-semibold uppercase tracking-widest text-purple-300">
-          Animus — soul of the biome
-        </h3>
+        <p className="eyebrow text-flux-300">Animus — soul of the biome</p>
         {state.kind !== "loading" && state.kind !== "absent" && state.kind !== "error" && (
-          <span className="text-[10px] font-mono text-gray-600 truncate max-w-[160px]">
-            root: {state.peek.root.slice(0, 12)}…
+          <span className="text-[10px] font-mono text-gray-500 truncate max-w-[160px]">
+            root · {state.peek.root.slice(0, 12)}…
           </span>
         )}
       </div>
 
       {state.kind === "loading" && (
-        <p className="text-xs text-gray-600">Resolving animus…</p>
+        <p className="text-xs font-mono text-gray-500">Resolving animus…</p>
       )}
 
       {state.kind === "error" && (
@@ -147,7 +145,7 @@ export function AnimusPanel({
                 setDraft("");
                 setEditing(true);
               }}
-              className="text-xs rounded-md bg-purple-700 px-3 py-1.5 hover:bg-purple-600 transition-colors"
+              className="btn-neon !px-3 !py-1.5 !text-[11px]"
             >
               + Publish animus
             </button>
@@ -162,10 +160,10 @@ export function AnimusPanel({
 
       {state.kind === "encrypted" && !editing && (
         <>
-          <div className="rounded-md border border-gray-800 bg-gray-950/60 p-3 font-mono text-xs text-gray-700 break-all">
-            <span className="text-gray-600">[encrypted ciphertext —</span> only
-            biome members can decrypt
-            <span className="text-gray-600">]</span>
+          <div className="rounded-md border border-flux-700/40 bg-ink-950/80 p-3 font-mono text-xs text-flux-200/70 break-all">
+            <span className="text-flux-400">[encrypted ciphertext —</span>{" "}
+            only biome members can decrypt
+            <span className="text-flux-400">]</span>
           </div>
           <div className="mt-3 flex items-center gap-3 flex-wrap">
             {isMember && K ? (
@@ -184,7 +182,7 @@ export function AnimusPanel({
               <span className="text-xs text-red-400">{decryptError}</span>
             )}
           </div>
-          <div className="mt-3 pt-3 border-t border-purple-900/30 flex items-center justify-between text-[11px] font-mono text-gray-600">
+          <div className="mt-3 pt-3 border-t border-flux-900/40 flex items-center justify-between text-[11px] font-mono text-gray-600">
             <span>owner: {state.peek.ownerEns}</span>
             <span>
               published{" "}
@@ -199,7 +197,7 @@ export function AnimusPanel({
           <pre className="whitespace-pre-wrap text-sm text-gray-200 font-sans leading-relaxed max-h-64 overflow-y-auto">
             {state.content}
           </pre>
-          <div className="mt-3 pt-3 border-t border-purple-900/30 flex items-center justify-between text-[11px] font-mono text-gray-600">
+          <div className="mt-3 pt-3 border-t border-flux-900/40 flex items-center justify-between text-[11px] font-mono text-gray-600">
             <span>owner: {state.peek.ownerEns}</span>
             <span>
               published{" "}
@@ -212,7 +210,7 @@ export function AnimusPanel({
                 setDraft(state.content);
                 setEditing(true);
               }}
-              className="mt-3 text-xs rounded-md border border-purple-800 px-3 py-1.5 hover:border-purple-700 transition-colors"
+              className="mt-3 text-xs rounded-md border border-flux-700/40 px-3 py-1.5 hover:border-purple-700 transition-colors"
             >
               Edit animus
             </button>
@@ -223,7 +221,7 @@ export function AnimusPanel({
       {editing && (
         <>
           <textarea
-            className="w-full rounded-lg border border-gray-700 bg-gray-950 p-3 text-sm text-gray-200 font-mono resize-y focus:border-purple-600 focus:outline-none disabled:opacity-50"
+            className="w-full rounded-lg border border-flux-700/40 bg-ink-900/80 p-3 text-sm text-gray-200 font-mono resize-y focus:border-flux-400 focus:shadow-neon-flux focus:outline-none disabled:opacity-50 transition-all"
             rows={10}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}

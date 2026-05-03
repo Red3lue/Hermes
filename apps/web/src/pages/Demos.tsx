@@ -1,80 +1,108 @@
 import { Link } from "react-router-dom";
+import { HermesShell } from "@/components/HermesShell";
 
 const demos = [
   {
     to: "/demos/quorum",
     title: "Quorum",
-    subtitle: "Ask the swarm · sealed DM · public access",
-    desc: "Any registered .users.hermes.eth subdomain can submit a sealed request to the coordinator. Coordinator routes it to its 3-agent biome, collects verdicts, replies to you on chain. No HTTP — every leg is HermesInbox + 0G.",
+    subtitle: "Sealed request · 3-agent deliberation · synthesised reply",
+    desc:
+      "Any *.users.hermes.eth subdomain can submit a sealed request to the coordinator. It fans the question to a 3-agent biome, collects verdicts, synthesises and replies — every leg on chain.",
     badge: "flagship",
-  },
-  {
-    to: "/demos/chatbot",
-    title: "Secret Chatbot",
-    subtitle: "Encrypted 1:1 · ENS-addressed · body stays opaque on chain",
-    desc: "Send an encrypted message to the concierge agent. The body is opaque ciphertext on chain. Toggle the chain view to see the envelope.",
-    badge: null,
+    accent: "cyan" as const,
   },
   {
     to: "/demos/selector",
     title: "Selector",
-    subtitle: "Anima as routing manifest · agent picks the right expert",
-    desc: "The Selector reads its own encrypted Anima — a routing manifest of three expert ENS names — and dispatches your question to whichever expert fits. Edit the Anima, change the routing. Soul becomes behaviour.",
+    subtitle: "Anima as routing manifest · soul becomes behaviour",
+    desc:
+      "The Selector reads its own encrypted Anima — a routing manifest of three expert ENS names — and dispatches your question to whichever expert fits. Edit the soul, change the routing.",
     badge: "anima",
+    accent: "flux" as const,
+  },
+  {
+    to: "/demos/chatbot",
+    title: "Concierge",
+    subtitle: "Encrypted 1:1 · ENS-addressed · ciphertext on chain",
+    desc:
+      "Send an encrypted DM to the concierge. The body is opaque ciphertext on chain. Multi-thread, walkable HistoryManifest, zero relays.",
+    badge: null,
+    accent: "cyan" as const,
   },
   {
     to: "/biomes",
-    title: "BIOME Explorer",
+    title: "Biome Explorer",
     subtitle: "Read any biome by ENS name",
-    desc: "Open any biome, see its charter, member roster, and on-chain event log.",
+    desc:
+      "Open any biome, inspect its charter, member roster, encrypted Animus, and on-chain event log.",
     badge: null,
+    accent: "flux" as const,
   },
 ];
 
 export default function DemosPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <nav className="border-b border-gray-800 px-6 py-4">
-        <div className="mx-auto max-w-5xl flex items-center gap-4">
-          <Link to="/" className="font-mono font-bold text-hermes-400 text-lg">
-            hermes
-          </Link>
-          <span className="text-gray-700">/</span>
-          <span className="text-gray-400 text-sm">demos</span>
+    <HermesShell crumbs={[{ label: "demos" }]}>
+      <section className="px-6 pt-16 pb-10">
+        <div className="mx-auto max-w-6xl">
+          <p className="eyebrow mb-3">Live demos</p>
+          <h1 className="font-display text-4xl sm:text-5xl font-bold leading-tight">
+            <span className="text-gradient-neon">Pick a demo.</span>
+            <br />
+            <span className="text-gray-100">Watch the chain.</span>
+          </h1>
+          <p className="mt-4 text-gray-400 max-w-2xl text-base leading-relaxed">
+            All four demos run on Sepolia + 0G Galileo today. No backend
+            coordination plane — every message is a sealed envelope on 0G with
+            a pointer in HermesInbox. Click any tx hash inside to verify.
+          </p>
         </div>
-      </nav>
-      <div className="mx-auto max-w-5xl px-6 py-16">
-        <h1 className="text-3xl font-bold mb-2">Demos</h1>
-        <p className="text-gray-400 mb-12">
-          Live demos on Sepolia. All messages hit the chain. No backend — the browser talks to
-          Sepolia + 0G directly.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {demos.map((demo) => (
-            <Link
-              key={demo.to}
-              to={demo.to}
-              className="group rounded-xl border border-gray-800 bg-gray-900 p-6 flex flex-col gap-3 hover:border-hermes-700 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="text-lg font-semibold group-hover:text-hermes-300 transition-colors">
-                  {demo.title}
-                </h2>
-                {demo.badge && (
-                  <span className="flex-shrink-0 rounded-full bg-hermes-900 border border-hermes-700 px-2 py-0.5 text-xs font-mono text-hermes-300">
-                    {demo.badge}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs font-mono text-gray-500">{demo.subtitle}</p>
-              <p className="text-sm text-gray-400 leading-relaxed flex-1">{demo.desc}</p>
-              <span className="mt-2 text-sm font-medium text-hermes-400 group-hover:text-hermes-300">
-                Open →
-              </span>
-            </Link>
-          ))}
+      </section>
+
+      <section className="px-6 pb-24">
+        <div className="mx-auto max-w-6xl grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {demos.map((d) => {
+            const isCyan = d.accent === "cyan";
+            return (
+              <Link
+                key={d.to}
+                to={d.to}
+                className={
+                  isCyan
+                    ? "panel-neon card-hover-cyan group p-6 flex flex-col"
+                    : "panel-neon-flux card-hover-flux group p-6 flex flex-col"
+                }
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="font-display text-2xl font-bold text-gray-100 group-hover:text-hermes-200 transition-colors">
+                    {d.title}
+                  </h2>
+                  {d.badge && (
+                    <span className={isCyan ? "pill-cyan" : "pill-flux"}>
+                      {d.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 text-xs font-mono uppercase tracking-widest text-gray-500">
+                  {d.subtitle}
+                </p>
+                <p className="mt-4 text-sm text-gray-400 leading-relaxed flex-1">
+                  {d.desc}
+                </p>
+                <span
+                  className={
+                    isCyan
+                      ? "mt-5 font-display text-xs uppercase tracking-[0.22em] text-hermes-300 group-hover:text-hermes-200"
+                      : "mt-5 font-display text-xs uppercase tracking-[0.22em] text-flux-300 group-hover:text-flux-200"
+                  }
+                >
+                  Open →
+                </span>
+              </Link>
+            );
+          })}
         </div>
-      </div>
-    </div>
+      </section>
+    </HermesShell>
   );
 }
