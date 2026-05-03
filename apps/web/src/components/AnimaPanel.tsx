@@ -228,20 +228,18 @@ export function AnimaPanel({ ens }: { ens: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-4">
+    <div className="panel-neon-flux p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500">
-          Anima — soul of the agent
-        </h3>
+        <p className="eyebrow text-flux-300">Anima — soul of the agent</p>
         {(state.kind === "encrypted" || state.kind === "decrypted") && (
-          <span className="text-[10px] font-mono text-gray-600 truncate max-w-[160px]">
-            root: {state.peek.root.slice(0, 12)}…
+          <span className="text-[10px] font-mono text-gray-500 truncate max-w-[160px]">
+            root · {state.peek.root.slice(0, 12)}…
           </span>
         )}
       </div>
 
       {state.kind === "loading" && (
-        <p className="text-xs text-gray-600">Resolving anima…</p>
+        <p className="text-xs font-mono text-gray-500">Resolving anima…</p>
       )}
 
       {state.kind === "error" && (
@@ -252,11 +250,10 @@ export function AnimaPanel({ ens }: { ens: string }) {
 
       {state.kind === "absent" && !editing && (
         <div>
-          <p className="text-xs text-gray-600 mb-3">
-            No anima published for this agent. The owner of the ENS
-            subname can publish one (encrypted to the agent's own
-            pubkey) to give the agent grounding context that ships with
-            every reply.
+          <p className="text-xs text-gray-500 mb-3">
+            No anima published for this agent. The owner of the ENS subname
+            can publish one (encrypted to the agent's own pubkey) to give
+            the agent grounding context that ships with every reply.
           </p>
           {isEnsOwner && !!walletClient ? (
             <button
@@ -264,12 +261,12 @@ export function AnimaPanel({ ens }: { ens: string }) {
                 setDraft("");
                 setEditing(true);
               }}
-              className="text-xs rounded-md bg-hermes-600 px-3 py-1.5 hover:bg-hermes-500 transition-colors"
+              className="btn-neon !px-3 !py-1.5 !text-[11px]"
             >
               + Publish anima
             </button>
           ) : (
-            <p className="text-[11px] text-gray-700 italic">
+            <p className="text-[11px] text-gray-500 italic">
               {!address
                 ? "Connect a wallet to publish."
                 : ensOwnerAddr
@@ -282,22 +279,22 @@ export function AnimaPanel({ ens }: { ens: string }) {
 
       {state.kind === "encrypted" && !editing && (
         <>
-          <div className="rounded-md border border-gray-800 bg-gray-950/60 p-3 font-mono text-xs text-gray-700 break-all">
-            <span className="text-gray-600">[encrypted ciphertext —</span>{" "}
+          <div className="rounded-md border border-flux-700/40 bg-ink-950/80 p-3 font-mono text-xs text-flux-200/70 break-all">
+            <span className="text-flux-400">[encrypted ciphertext —</span>{" "}
             only the agent's owner / runtime can decrypt
-            <span className="text-gray-600">]</span>
+            <span className="text-flux-400">]</span>
           </div>
           <div className="mt-3 flex items-center gap-3 flex-wrap">
             {isDocOwner ? (
               <button
                 onClick={decrypt}
                 disabled={busy === "decrypt"}
-                className="text-xs rounded-md bg-hermes-600 px-3 py-1.5 hover:bg-hermes-500 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                className="btn-neon !px-3 !py-1.5 !text-[11px]"
               >
                 {busy === "decrypt" ? "Deriving & decrypting…" : "🔓 Decrypt"}
               </button>
             ) : (
-              <span className="text-[11px] text-gray-600 italic">
+              <span className="text-[11px] text-gray-500 italic">
                 only the agent's owner ({state.peek.ownerAddr.slice(0, 10)}…
                 {state.peek.ownerAddr.slice(-4)}) can decrypt
               </span>
@@ -306,9 +303,9 @@ export function AnimaPanel({ ens }: { ens: string }) {
               <span className="text-xs text-red-400">{decryptError}</span>
             )}
           </div>
-          <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between text-[11px] font-mono text-gray-600">
+          <div className="mt-3 pt-3 border-t border-flux-900/40 flex items-center justify-between text-[11px] font-mono text-gray-500">
             <span>
-              owner: {state.peek.ownerAddr.slice(0, 10)}…
+              owner · {state.peek.ownerAddr.slice(0, 10)}…
               {state.peek.ownerAddr.slice(-4)}
             </span>
             <span>
@@ -321,12 +318,12 @@ export function AnimaPanel({ ens }: { ens: string }) {
 
       {state.kind === "decrypted" && !editing && (
         <>
-          <pre className="whitespace-pre-wrap text-sm text-gray-200 font-sans leading-relaxed max-h-64 overflow-y-auto">
+          <pre className="whitespace-pre-wrap text-sm text-gray-100 font-sans leading-relaxed max-h-64 overflow-y-auto">
             {state.content}
           </pre>
-          <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between text-[11px] font-mono text-gray-600">
+          <div className="mt-3 pt-3 border-t border-flux-900/40 flex items-center justify-between text-[11px] font-mono text-gray-500">
             <span>
-              owner: {state.peek.ownerAddr.slice(0, 10)}…
+              owner · {state.peek.ownerAddr.slice(0, 10)}…
               {state.peek.ownerAddr.slice(-4)}
             </span>
             <span>
@@ -340,7 +337,7 @@ export function AnimaPanel({ ens }: { ens: string }) {
                 setDraft(state.content);
                 setEditing(true);
               }}
-              className="mt-3 text-xs rounded-md border border-gray-700 px-3 py-1.5 hover:border-gray-600 transition-colors"
+              className="btn-ghost-neon !px-3 !py-1.5 !text-[11px] mt-3"
             >
               Edit anima
             </button>
@@ -351,7 +348,7 @@ export function AnimaPanel({ ens }: { ens: string }) {
       {editing && (
         <>
           <textarea
-            className="w-full rounded-lg border border-gray-700 bg-gray-950 p-3 text-sm text-gray-200 font-mono resize-y focus:border-hermes-600 focus:outline-none disabled:opacity-50"
+            className="w-full rounded-lg border border-flux-700/40 bg-ink-900/80 p-3 text-sm text-gray-200 font-mono resize-y focus:border-flux-400 focus:shadow-neon-flux focus:outline-none disabled:opacity-50 transition-all"
             rows={10}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -362,7 +359,7 @@ export function AnimaPanel({ ens }: { ens: string }) {
             <button
               onClick={save}
               disabled={busy === "publish" || !draft.trim()}
-              className="text-xs rounded-md bg-hermes-600 px-3 py-1.5 font-semibold hover:bg-hermes-500 disabled:opacity-50 transition-colors"
+              className="btn-neon !px-4 !py-1.5 !text-[11px]"
             >
               {busy === "publish" ? "Encrypting & publishing…" : "Encrypt, sign & publish"}
             </button>
@@ -378,7 +375,7 @@ export function AnimaPanel({ ens }: { ens: string }) {
             </button>
             {error && <span className="text-xs text-red-400">{error}</span>}
           </div>
-          <p className="mt-2 text-[11px] text-gray-700">
+          <p className="mt-2 text-[11px] font-mono text-gray-500">
             box(content, agent_pubkey, agent_secret) · 1 wallet sig (sign
             doc) · 1 0G upload · 1 Sepolia tx (setText). Rejects if you
             don't own this ENS subname.

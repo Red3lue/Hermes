@@ -1,53 +1,72 @@
 import { Link } from "react-router-dom";
-import { WalletButton } from "@/components/WalletButton";
+import { HermesShell } from "@/components/HermesShell";
+import { WingLogo } from "@/components/WingLogo";
 
-const steps = [
+const flowSteps = [
   {
-    icon: "🔍",
+    no: "01",
     label: "Resolve",
-    desc: "ENS lookup → get recipient's X25519 pubkey + inbox address",
+    desc: "ENS lookup → recipient's X25519 pubkey + inbox address.",
   },
   {
-    icon: "🔐",
+    no: "02",
     label: "Encrypt",
-    desc: "tweetnacl sealed-box seals the message body. Bodies are opaque on chain.",
+    desc: "tweetnacl sealed-box. Bodies stay opaque on chain.",
   },
   {
-    icon: "☁️",
+    no: "03",
     label: "Upload",
-    desc: "Envelope JSON uploaded to 0G Storage. Addressed by root hash.",
+    desc: "Sealed envelope to 0G Storage, addressed by root hash.",
   },
   {
-    icon: "📬",
+    no: "04",
     label: "Append",
-    desc: "Root hash appended to HermesInbox contract. Recipient polls events.",
+    desc: "Root hash to HermesInbox. Recipient polls and decrypts.",
   },
 ];
 
-const useCases = [
+const features = [
   {
-    title: "Agent quorums",
-    desc: "A panel of LLM agents deliberates over a shared context document in an encrypted BIOME. Every message is signed, every verdict is on chain. No shared backend between agents.",
-    demo: "/demos/quorum",
-    label: "Try the quorum demo",
+    badge: "ENS as PKI",
+    title: "Identity that travels",
+    body:
+      "Every agent is an ENS subname. Address, encryption pubkey, inbox, and encrypted soul live in text records. Swap the model, swap the host — the address book follows.",
+    accent: "cyan" as const,
   },
   {
-    title: "Confidential customer concierge",
-    desc: "Your personal AI is reachable by ENS name. Messages between you and the agent are sealed — opaque ciphertext on chain. The agent is portable: swap the model, keep the address book.",
-    demo: "/demos/chatbot",
-    label: "Try the chatbot demo",
+    badge: "Encrypted Soul",
+    title: "Anima · Animus",
+    body:
+      "Per-agent and per-biome encrypted, signed JSON pinned via ENS. The Selector demo uses an Anima as a routing manifest — editing the soul rewrites runtime behaviour.",
+    accent: "flux" as const,
   },
   {
-    title: "Cross-org workflows",
-    desc: "Vendor's billing agent and your finance agent share a BIOME scoped to one purchase order. They can exchange documents, confirmations, and exceptions — without exposing credentials to each other's operator.",
-    demo: null,
-    label: null,
+    badge: "0G Storage",
+    title: "Content-addressed substrate",
+    body:
+      "Every envelope, manifest, and soul doc is a content-addressed blob. Fast (≈3s upload), cheap, and verifiable — the chain only carries the namehash + root.",
+    accent: "cyan" as const,
   },
   {
-    title: "Compliance-friendly logs",
-    desc: "Every message is EIP-191 signed, sender-attributable, and tamper-evident. Perfect for audit trails without hosting your own message store — the chain is the log.",
-    demo: null,
-    label: null,
+    badge: "Live Swarms",
+    title: "Quorum + Selector",
+    body:
+      "Two on-chain swarm topologies in one deploy: a 3-agent quorum with synthesised verdict, and an Anima-driven router that picks the right expert. Both run today, on Sepolia + 0G Galileo.",
+    accent: "flux" as const,
+  },
+  {
+    badge: "Zero Relays",
+    title: "No middleman, no censorship surface",
+    body:
+      "Sender → 0G blob → on-chain pointer → recipient poll. There is no server in the middle that can drop, inspect, or filter messages.",
+    accent: "cyan" as const,
+  },
+  {
+    badge: "Open SDK",
+    title: "5 lines to send a message",
+    body:
+      "hermes-agents-sdk on npm. 60 unit tests. Reusable building blocks: signed envelopes, history manifests with chain-walking, biomes with member rotation, full policy gates.",
+    accent: "flux" as const,
   },
 ];
 
@@ -57,286 +76,278 @@ const stack = [
   { name: "Reown AppKit", url: "https://reown.com" },
   { name: "viem", url: "https://viem.sh" },
   { name: "tweetnacl", url: "https://tweetnacl.js.org" },
+  { name: "Foundry", url: "https://getfoundry.sh" },
 ];
 
 export default function PitchPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-800 bg-gray-950/80 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between">
-          <span className="font-mono font-bold text-hermes-400 text-lg">
-            hermes
-          </span>
-          <div className="flex items-center gap-6 text-sm text-gray-400">
-            <a
-              href="#how-it-works"
-              className="hover:text-gray-100 transition-colors"
-            >
-              How it works
-            </a>
-            <a href="#biomes" className="hover:text-gray-100 transition-colors">
-              BIOMES
-            </a>
-            <a
-              href="#use-cases"
-              className="hover:text-gray-100 transition-colors"
-            >
-              Use cases
-            </a>
-            <Link
-              to="/dashboard"
-              className="hover:text-gray-100 transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/demos"
-              className="rounded-md bg-hermes-600 px-3 py-1.5 text-white hover:bg-hermes-500 transition-colors"
-            >
-              Try demos →
-            </Link>
-            <WalletButton />
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="pt-32 pb-24 px-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-hermes-800 bg-hermes-950/50 px-4 py-1.5 text-sm text-hermes-300">
-            <span className="h-2 w-2 rounded-full bg-hermes-400 animate-pulse" />
-            ETHGlobal Open Agents · ENS + 0G Prize Track
-          </div>
-          <h1 className="mt-6 text-5xl font-bold leading-tight tracking-tight sm:text-6xl">
-            Encrypted, server-less{" "}
-            <span className="text-hermes-400">messaging between AI agents</span>
-          </h1>
-          <p className="mt-4 text-xl text-gray-400 max-w-2xl mx-auto">
-            Addressed by ENS. Transported over 0G. No relays in the middle.
-          </p>
-          <p className="mt-2 text-base text-gray-500 max-w-2xl mx-auto">
-            Not a memory layer for one agent — a communication layer between
-            many.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/demos"
-              className="rounded-lg bg-hermes-600 px-6 py-3 text-base font-semibold text-white hover:bg-hermes-500 transition-colors"
-            >
-              See the demos →
-            </Link>
-            <a
-              href="https://github.com/lgiilardi/openAgents"
-              className="rounded-lg border border-gray-700 px-6 py-3 text-base font-semibold text-gray-300 hover:border-gray-500 hover:text-white transition-colors"
-            >
-              GitHub
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Why this exists */}
-      <section className="py-20 px-6 border-t border-gray-800">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-8">
-            Why this exists
-          </h2>
-          <div className="space-y-6 text-gray-300 text-lg leading-relaxed">
-            <p>
-              Agents already talk to each other — over OpenAI threads, Slack
-              webhooks, or proprietary mesh networks. None of those are private,
-              portable, or auditable. And none of them give an agent a stable
-              identity that travels.
-            </p>
-            <p>
-              Hermes treats agents as first-class network citizens: they have a
-              stable name (ENS), a public key (X25519 in a text record), and a
-              verifiable inbox (a single contract event). Any agent can address
-              any other by name and send a signed, encrypted message — no shared
-              backend, no API key exchange.
-            </p>
-            <p>
-              You can swap the model, swap the host, swap the wallet. The
-              address book and the message history travel with the agent.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section
-        id="how-it-works"
-        className="py-20 px-6 border-t border-gray-800 bg-gray-900/30"
-      >
-        <div className="mx-auto max-w-4xl">
-          <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-12 text-center">
-            How it works
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-            {steps.map((step, i) => (
-              <div key={step.label} className="relative">
-                {i < steps.length - 1 && (
-                  <div
-                    className="hidden sm:block absolute top-7 left-full w-full h-px bg-gray-700 -translate-y-1/2 z-0"
-                    style={{
-                      width: "calc(100% - 2rem)",
-                      left: "calc(50% + 2rem)",
-                    }}
-                  />
-                )}
-                <div className="relative z-10 flex flex-col items-center text-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-700 bg-gray-900 text-2xl">
-                    {step.icon}
-                  </div>
-                  <p className="font-mono font-semibold text-hermes-300 text-sm">
-                    {i + 1}. {step.label}
-                  </p>
-                  <p className="text-sm text-gray-400 leading-relaxed">
-                    {step.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* BIOMES */}
-      <section id="biomes" className="py-20 px-6 border-t border-gray-800">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-4">
-            BIOMES — shared rooms for agent swarms
-          </h2>
-          <p className="text-gray-400 text-base mb-8">
-            When multiple agents need a shared conversation, Hermes provides
-            BIOMES: encrypted multi-party rooms with cryptographic membership.
-          </p>
-          <ul className="space-y-4">
-            {[
-              "Shared symmetric key wrapped per member — multi-recipient sealed wraps, not a single-user secret.",
-              "A charter (goal + rules) any reader can audit, stored on 0G and referenced in the biome doc.",
-              "Message log every member can decrypt and verify — with a full history manifest chain.",
-            ].map((point) => (
-              <li key={point} className="flex gap-3">
-                <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-hermes-500" />
-                <span className="text-gray-300">{point}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-8 rounded-lg border border-hermes-800 bg-hermes-950/30 px-5 py-4 text-hermes-300 text-sm">
-            This is the multi-party piece — many agents, one encrypted room, no
-            central host.
-          </div>
-        </div>
-      </section>
-
-      {/* Use cases */}
-      <section
-        id="use-cases"
-        className="py-20 px-6 border-t border-gray-800 bg-gray-900/30"
-      >
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-12">
-            Use cases
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {useCases.map((uc) => (
-              <div
-                key={uc.title}
-                className="rounded-xl border border-gray-800 bg-gray-900 p-6 flex flex-col gap-3"
-              >
-                <h3 className="font-semibold text-gray-100">{uc.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed flex-1">
-                  {uc.desc}
-                </p>
-                {uc.demo && (
-                  <Link
-                    to={uc.demo}
-                    className="mt-2 text-sm font-medium text-hermes-400 hover:text-hermes-300 transition-colors"
-                  >
-                    {uc.label} →
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why it matters */}
-      <section className="py-20 px-6 border-t border-gray-800">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-8">
-            Why it matters
-          </h2>
-          <div className="space-y-3 text-gray-300">
-            {[
-              "No relays = no censorship surface. Messages move from sender to recipient with no intermediary that can inspect, filter, or drop them.",
-              "ENS = one identity across every chain and every model. The agent's address is human-readable and travels with it.",
-              "0G = paying for storage you actually use, not a SaaS subscription per agent.",
-            ].map((line) => (
-              <p key={line} className="flex gap-3">
-                <span className="text-hermes-500 font-bold flex-shrink-0">
-                  →
-                </span>
-                {line}
-              </p>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* What this isn't */}
-      <section className="py-20 px-6 border-t border-gray-800 bg-gray-900/30">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-sm font-mono font-semibold uppercase tracking-widest text-hermes-400 mb-6">
-            What this isn't
-          </h2>
-          <p className="text-gray-400 leading-relaxed">
-            Hermes is not an agent memory store. Hermes is a way for distinct
-            agents, possibly belonging to different operators, to talk to each
-            other privately and verifiably. Hermes is how agents reach each
-            other.
-          </p>
-        </div>
-      </section>
-
-      {/* Stack + Footer */}
-      <footer className="py-12 px-6 border-t border-gray-800">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4 flex-wrap justify-center">
-              <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">
-                Built with
-              </span>
-              {stack.map((s) => (
-                <a
-                  key={s.name}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-gray-400 hover:text-gray-200 transition-colors border border-gray-700 rounded px-2 py-1"
-                >
-                  {s.name}
-                </a>
-              ))}
+    <HermesShell>
+      {/* HERO */}
+      <section className="relative px-6 pt-20 pb-28 sm:pt-28 sm:pb-32 overflow-hidden">
+        <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-hermes-500/30 bg-ink-900/60 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.22em] text-hermes-300 backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-hermes-400 animate-pulse shadow-neon-cyan" />
+              ETHGlobal · Open Agents · ENS + 0G
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
+            <h1 className="mt-6 font-display text-5xl sm:text-7xl font-bold leading-[0.95] tracking-tight">
+              <span className="text-gradient-neon">HERMES</span>
+              <br />
+              <span className="text-gray-100">PROJECT</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-base sm:text-lg text-gray-400 leading-relaxed">
+              The async, end-to-end encrypted coordination layer for autonomous
+              AI agent swarms. ENS is the address book. 0G is the substrate.
+              The chain is the protocol.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-4">
+              <Link to="/demos" className="btn-neon">
+                Launch Interface →
+              </Link>
               <a
-                href="https://github.com/lgiilardi/openAgents"
+                href="https://www.npmjs.com/package/hermes-agents-sdk"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-gray-300 transition-colors"
+                className="btn-ghost-neon"
               >
-                GitHub
+                npm install
               </a>
-              <span>·</span>
-              <span className="font-mono">ETHGlobal 2026</span>
+              <a
+                href="https://github.com/Red3lue/Hermes"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-display text-xs uppercase tracking-[0.22em] text-gray-400 hover:text-hermes-300 transition-colors"
+              >
+                GitHub ↗
+              </a>
             </div>
+
+            {/* live stats strip */}
+            <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl">
+              {[
+                { k: "9", v: "live agents" },
+                { k: "3", v: "swarm topologies" },
+                { k: "2", v: "on-chain biomes" },
+                { k: "0.1.2", v: "sdk on npm" },
+              ].map((s) => (
+                <div
+                  key={s.v}
+                  className="panel-soft px-4 py-3 text-center"
+                >
+                  <p className="font-display text-2xl font-bold text-hermes-200">
+                    {s.k}
+                  </p>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-500 mt-1">
+                    {s.v}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 flex items-center justify-center">
+            <div className="relative animate-wing-float">
+              <WingLogo size={420} hero className="drop-shadow-[0_0_45px_rgba(44,199,255,0.45)]" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="neon-hr mx-auto max-w-6xl" />
+
+      {/* WHY THIS EXISTS */}
+      <section className="py-20 px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="eyebrow mb-3">Why this exists</p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-100 mb-6">
+            Agents need a home address.
+          </h2>
+          <p className="text-gray-400 text-base sm:text-lg leading-relaxed">
+            Today every team reinvents the wheel — Redis, Telegram bots, ngrok
+            tunnels, custom relays. Hermes makes the chain itself the
+            substrate: identity by ENS, content by 0G, rendezvous by a 30-line
+            Solidity contract. Two agents on different stacks can talk
+            privately, asynchronously, by name.
+          </p>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section
+        id="how-it-works"
+        className="py-20 px-6 border-t border-hermes-700/20"
+      >
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <p className="eyebrow mb-3">How it works</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-100">
+              Four steps. No relays in the middle.
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {flowSteps.map((s) => (
+              <div key={s.label} className="panel-neon card-hover-cyan p-5">
+                <p className="font-display text-3xl font-bold text-hermes-300/40">
+                  {s.no}
+                </p>
+                <p className="mt-2 font-display text-sm uppercase tracking-[0.2em] text-hermes-200">
+                  {s.label}
+                </p>
+                <p className="mt-3 text-sm text-gray-400 leading-relaxed">
+                  {s.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section
+        id="features"
+        className="py-20 px-6 border-t border-hermes-700/20"
+      >
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-14 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <p className="eyebrow mb-3">Features</p>
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-100">
+                Composable primitives, on chain.
+              </h2>
+            </div>
+            <Link
+              to="/demos"
+              className="btn-ghost-neon self-start sm:self-end"
+            >
+              See the live demos →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((f) => (
+              <article
+                key={f.title}
+                className={
+                  f.accent === "cyan"
+                    ? "panel-neon card-hover-cyan p-6"
+                    : "panel-neon-flux card-hover-flux p-6"
+                }
+              >
+                <span
+                  className={f.accent === "cyan" ? "pill-cyan" : "pill-flux"}
+                >
+                  {f.badge}
+                </span>
+                <h3 className="mt-4 font-display text-lg font-semibold text-gray-100">
+                  {f.title}
+                </h3>
+                <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+                  {f.body}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TECH STACK */}
+      <section
+        id="tech-stack"
+        className="py-20 px-6 border-t border-hermes-700/20"
+      >
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-12 text-center">
+            <p className="eyebrow mb-3">Tech Stack</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-100">
+              Built on open primitives.
+            </h2>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {stack.map((s) => (
+              <a
+                key={s.name}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="panel-soft px-5 py-2.5 text-sm font-display uppercase tracking-[0.18em] text-gray-300 hover:text-hermes-200 hover:border-hermes-500/60 hover:shadow-neon-cyan transition-all"
+              >
+                {s.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA STRIP */}
+      <section className="py-20 px-6 border-t border-hermes-700/20">
+        <div className="mx-auto max-w-4xl panel-neon p-10 text-center relative overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-40 -right-32 h-96 w-96 rounded-full bg-flux-500/10 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-hermes-500/10 blur-3xl"
+          />
+          <p className="eyebrow mb-3 relative">Live Demo</p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-100 relative">
+            Watch agents talk on chain.
+          </h2>
+          <p className="mt-4 text-gray-400 max-w-2xl mx-auto relative leading-relaxed">
+            Three flagship demos, all running on Sepolia + 0G Galileo today —
+            an encrypted concierge, a 3-agent quorum, and an Anima-driven
+            expert router.
+          </p>
+          <div className="mt-8 relative">
+            <Link to="/demos" className="btn-neon">
+              Launch Interface →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-10 px-6 border-t border-hermes-700/20">
+        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-hermes-400">
+              <WingLogo size={20} />
+            </span>
+            <span className="font-display text-sm tracking-[0.18em] text-gray-300">
+              HERMES
+            </span>
+            <span className="text-gray-700">·</span>
+            <span className="text-xs font-mono text-gray-500">
+              ETHGlobal Open Agents · 2026
+            </span>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-display uppercase tracking-[0.2em] text-gray-500">
+            <a
+              href="https://github.com/Red3lue/Hermes"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-hermes-300 transition-colors"
+            >
+              GitHub ↗
+            </a>
+            <a
+              href="https://www.npmjs.com/package/hermes-agents-sdk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-hermes-300 transition-colors"
+            >
+              npm ↗
+            </a>
+            <a
+              href="https://sepolia.etherscan.io/address/0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-hermes-300 transition-colors"
+            >
+              Inbox contract ↗
+            </a>
           </div>
         </div>
       </footer>
-    </div>
+    </HermesShell>
   );
 }

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
@@ -19,7 +19,7 @@ import {
   type BiomeMember,
   type UnsignedBiomeDoc,
 } from "hermes-agents-sdk";
-import { WalletButton } from "@/components/WalletButton";
+import { HermesShell } from "@/components/HermesShell";
 import { useWallet } from "@/hooks/useWallet";
 import { useUserAgent } from "@/hooks/useUserAgent";
 import { useKnownAgents } from "@/hooks/useKnownAgents";
@@ -292,27 +292,18 @@ export default function BiomeNew() {
   void encodeBase64;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <nav className="border-b border-gray-800 px-6 py-3 flex items-center gap-4">
-        <Link to="/" className="font-mono font-bold text-hermes-400">
-          hermes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <Link
-          to="/biomes"
-          className="text-gray-400 text-sm hover:text-gray-200"
-        >
-          biomes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-300 text-sm font-semibold">new biome</span>
-        <div className="ml-auto">
-          <WalletButton />
-        </div>
-      </nav>
-
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <h1 className="text-2xl font-bold mb-2">Create a new biome</h1>
+    <HermesShell
+      crumbs={[
+        { label: "biomes", to: "/biomes" },
+        { label: "new biome" },
+      ]}
+    >
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <p className="eyebrow text-flux-300 mb-2">New biome</p>
+        <h1 className="font-display text-3xl font-bold text-gray-100 mb-3">
+          <span className="text-gradient-neon">Charter</span>{" "}
+          <span className="text-gray-100">a swarm.</span>
+        </h1>
         <p className="text-sm text-gray-400 mb-8 leading-relaxed">
           Mints <code>&lt;label&gt;.{BIOMES_PARENT}</code> owned by your wallet,
           generates a fresh symmetric key <code>K</code>, wraps it for each
@@ -322,7 +313,7 @@ export default function BiomeNew() {
         </p>
 
         {(!address || user.status !== "ready") && (
-          <div className="mb-6 rounded-lg border border-yellow-900 bg-yellow-950/20 p-3 text-sm text-yellow-300">
+          <div className="mb-6 rounded-lg border border-flux-700/40 bg-flux-950/30 p-3 text-sm text-flux-200">
             Connect your wallet and complete user setup (Sign + Register +
             Records) on the Quorum demo page first. You need a{" "}
             <code>users.hermes.eth</code> ENS to be the BiomeDoc owner.
@@ -469,19 +460,19 @@ export default function BiomeNew() {
         )}
 
         {step.kind === "done" && (
-          <p className="mt-3 text-sm text-emerald-400">
+          <p className="mt-3 text-sm text-mint-400">
             ✓ {step.ens} is live. Now you can publish an Animus, add/remove
             members, and the agents will pick it up on their next poll.
           </p>
         )}
 
-        <p className="mt-6 text-xs text-gray-700 leading-relaxed">
-          Cost: 1 Sepolia tx (mint subname, paid by the deployer) · 1 wallet
+        <p className="mt-6 text-xs font-mono text-gray-500 leading-relaxed">
+          Cost · 1 Sepolia tx (mint subname, paid by the deployer) · 1 wallet
           sig (sign BiomeDoc) · 1 0G upload (via deployer proxy) · 1 Sepolia
           tx (set biome.root + biome.version, paid by your wallet).
         </p>
       </div>
-    </div>
+    </HermesShell>
   );
 }
 

@@ -121,12 +121,10 @@ export function BiomeMembersPanel({
   }
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-4">
+    <div className="panel-soft p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500">
-          Members ({doc.members.length})
-        </h3>
-        <span className="text-[10px] font-mono text-gray-600">
+        <p className="eyebrow">Members · {doc.members.length}</p>
+        <span className="text-[10px] font-mono text-gray-500">
           v{doc.version}
         </span>
       </div>
@@ -135,14 +133,14 @@ export function BiomeMembersPanel({
         {doc.members.map((m) => (
           <div
             key={m.ens}
-            className="flex items-center gap-2 rounded-md border border-gray-800 bg-gray-950/40 p-2"
+            className="flex items-center gap-2 rounded-md border border-hermes-700/20 bg-ink-950/60 p-2"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-mono text-gray-300 truncate">
+              <p className="text-xs font-mono text-gray-200 truncate">
                 {m.ens}
               </p>
-              <p className="text-[10px] font-mono text-gray-700 truncate">
-                pubkey: {m.pubkey.slice(0, 24)}…
+              <p className="text-[10px] font-mono text-gray-500 truncate">
+                pubkey · {m.pubkey.slice(0, 24)}…
               </p>
             </div>
             {isOwner && m.ens !== ownerEns && (
@@ -155,22 +153,18 @@ export function BiomeMembersPanel({
               </button>
             )}
             {m.ens === ownerEns && (
-              <span className="text-[10px] font-mono text-emerald-400">
-                owner
-              </span>
+              <span className="pill-mint">owner</span>
             )}
           </div>
         ))}
       </div>
 
       {isOwner && (
-        <div className="mt-4 pt-3 border-t border-gray-800">
-          <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-2">
-            Add member
-          </p>
+        <div className="mt-4 pt-3 border-t border-hermes-700/20">
+          <p className="eyebrow mb-2">Add member</p>
           <div className="flex gap-2">
             <input
-              className="flex-1 rounded-md border border-gray-700 bg-gray-950 px-3 py-1.5 text-sm font-mono placeholder-gray-700 focus:border-hermes-600 focus:outline-none"
+              className="flex-1 rounded-md border border-hermes-700/40 bg-ink-900/80 px-3 py-1.5 text-sm font-mono placeholder-gray-600 focus:border-hermes-400 focus:shadow-neon-cyan focus:outline-none transition-all"
               placeholder="<label>.users.hermes.eth"
               value={newMemberEns}
               onChange={(e) => setNewMemberEns(e.target.value)}
@@ -179,15 +173,15 @@ export function BiomeMembersPanel({
             <button
               onClick={handleAdd}
               disabled={busy !== null || !newMemberEns.trim()}
-              className="rounded-md bg-hermes-600 px-3 py-1.5 text-xs font-semibold hover:bg-hermes-500 disabled:opacity-50"
+              className="btn-neon !px-3 !py-1.5 !text-[11px]"
             >
               {busy === "adding" ? "Adding…" : "Add"}
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-gray-700">
-            Resolves the candidate's <code>hermes.pubkey</code>, wraps K for
-            them, signs a new BiomeDoc (v{doc.version + 1}), uploads, and
-            updates ENS. 1 wallet sig + 1 Sepolia tx.
+          <p className="mt-2 text-[11px] font-mono text-gray-500">
+            Resolves the candidate's <code className="text-hermes-300">hermes.pubkey</code>,
+            wraps K for them, signs a new BiomeDoc (v{doc.version + 1}),
+            uploads, and updates ENS. 1 wallet sig + 1 Sepolia tx.
           </p>
           {error && (
             <p className="mt-2 text-xs text-red-400 whitespace-pre-wrap">

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { AgentAvatar } from "@/components/AgentAvatar";
-import { WalletButton } from "@/components/WalletButton";
+import { HermesShell } from "@/components/HermesShell";
 import { useWallet } from "@/hooks/useWallet";
 import { useUserAgent } from "@/hooks/useUserAgent";
 import { useQuorumOnChain } from "@/hooks/useQuorumOnChain";
@@ -200,47 +199,41 @@ export default function QuorumPage() {
     (a) => a.ens === COORDINATOR_ENS,
   );
 
-  return (
-    <div className="flex h-screen flex-col bg-gray-950 text-gray-100 overflow-hidden">
-      <nav className="flex-shrink-0 border-b border-gray-800 px-4 py-3 flex items-center gap-3">
-        <Link to="/" className="font-mono font-bold text-hermes-400">
-          hermes
-        </Link>
-        <span className="text-gray-700">/</span>
-        <Link to="/demos" className="text-gray-400 text-sm hover:text-gray-200">
-          demos
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-300 text-sm font-semibold">quorum</span>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs font-mono text-gray-600 hidden sm:block">
-            via {COORDINATOR_ENS}
-          </span>
-          {user.identity?.ens && (
-            <span className="text-xs font-mono text-emerald-400 hidden md:block">
-              you: {user.identity.ens}
-            </span>
-          )}
-          <WalletButton />
-        </div>
-      </nav>
+  const rightSlot = (
+    <>
+      <span className="hidden sm:inline-flex pill-cyan">
+        via {COORDINATOR_ENS}
+      </span>
+      {user.identity?.ens && (
+        <span className="hidden md:inline-flex pill-mint">
+          you · {user.identity.ens}
+        </span>
+      )}
+    </>
+  );
 
+  return (
+    <HermesShell
+      full
+      compact
+      crumbs={[{ label: "demos", to: "/demos" }, { label: "quorum" }]}
+      rightSlot={rightSlot}
+    >
+      <div className="flex flex-1 flex-col overflow-hidden">
       {address && user.status !== "ready" && <UserSetupBanner user={user} />}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left: roster + my requests */}
-        <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-gray-800 overflow-y-auto">
-          <div className="p-4 border-b border-gray-800">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500 mb-3">
-              Coordinator
-            </h2>
-            <div className="rounded-lg border border-hermes-800 bg-hermes-950/30 p-3 flex items-center gap-3">
-              <AgentAvatar slug="coordinator" size={32} />
+        <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-hermes-700/20 overflow-y-auto bg-ink-900/40 backdrop-blur-sm">
+          <div className="p-4 border-b border-hermes-700/20">
+            <p className="eyebrow mb-3">Coordinator</p>
+            <div className="panel-neon p-3 flex items-center gap-3">
+              <AgentAvatar slug="coordinator" size={36} />
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-hermes-200 truncate">
+                <p className="font-display text-sm font-semibold text-hermes-200 truncate">
                   {coordinatorMeta?.displayName ?? "Coordinator"}
                 </p>
-                <p className="text-xs font-mono text-gray-400 truncate">
+                <p className="text-[11px] font-mono text-gray-400 truncate">
                   {COORDINATOR_ENS}
                 </p>
                 <p className="text-xs text-gray-500 mt-1 leading-snug">
@@ -251,16 +244,14 @@ export default function QuorumPage() {
             </div>
           </div>
 
-          <div className="p-4 border-b border-gray-800">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500 mb-3">
-              Quorum members ({members.length})
-            </h2>
-            <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+          <div className="p-4 border-b border-hermes-700/20">
+            <p className="eyebrow mb-3">Quorum members · {members.length}</p>
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
               Three independent personas. Each gets the same question over a
               sealed DM, replies with a one-paragraph verdict (
-              <span className="text-emerald-400">agree</span> /{" "}
+              <span className="text-mint-400">agree</span> /{" "}
               <span className="text-red-400">disagree</span> /{" "}
-              <span className="text-yellow-400">abstain</span>).
+              <span className="text-flux-300">abstain</span>).
             </p>
             {members.map((m) => {
               const slug = m.ens.split(".")[0];
@@ -270,14 +261,14 @@ export default function QuorumPage() {
               return (
                 <div
                   key={m.ens}
-                  className="rounded-lg border border-gray-800 bg-gray-900 p-3 flex items-start gap-3 mb-2 hover:border-gray-700 transition-colors"
+                  className="panel-soft card-hover-cyan p-3 flex items-start gap-3 mb-2"
                 >
-                  <AgentAvatar slug={slug} size={28} />
+                  <AgentAvatar slug={slug} size={32} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-200">
+                    <p className="font-display text-sm text-gray-100">
                       {known?.displayName ?? slug}
                     </p>
-                    <p className="text-xs font-mono text-gray-600 truncate">
+                    <p className="text-[11px] font-mono text-gray-500 truncate">
                       {m.ens}
                     </p>
                     {known?.tagline && (
@@ -293,10 +284,8 @@ export default function QuorumPage() {
 
           {requests.length > 0 && (
             <div className="p-4">
-              <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500 mb-2">
-                My requests
-              </h2>
-              <div className="flex flex-col gap-1">
+              <p className="eyebrow mb-3">My requests</p>
+              <div className="flex flex-col gap-1.5">
                 {requests
                   .slice()
                   .reverse()
@@ -307,20 +296,20 @@ export default function QuorumPage() {
                       <button
                         key={r.requestId}
                         onClick={() => setActiveRequestId(r.requestId)}
-                        className={`text-left rounded-md border p-2 text-xs transition-colors ${
+                        className={`text-left rounded-md border p-2.5 text-xs transition-all ${
                           isActive
-                            ? "border-hermes-700 bg-hermes-950/40"
-                            : "border-gray-800 bg-gray-900 hover:border-gray-700"
+                            ? "border-hermes-500/60 bg-hermes-950/40 shadow-neon-cyan"
+                            : "border-hermes-700/20 bg-ink-900/60 hover:border-hermes-500/40"
                         }`}
                       >
                         <p className="text-gray-200 line-clamp-2">
                           {r.markdown}
                         </p>
-                        <p className="text-xs font-mono text-gray-600 mt-1">
+                        <p className="text-[11px] font-mono text-gray-500 mt-1">
                           {replied ? (
-                            <span className="text-emerald-400">✓ answered</span>
+                            <span className="text-mint-400">✓ answered</span>
                           ) : (
-                            <span className="text-yellow-400">… working</span>
+                            <span className="text-flux-300">… working</span>
                           )}{" "}
                           · {r.requestId.slice(0, 8)}
                         </p>
@@ -336,22 +325,22 @@ export default function QuorumPage() {
         <main className="flex flex-1 flex-col min-w-0">
           {/* Hero — only when no active request */}
           {!activeRequest && (
-            <div className="flex-shrink-0 border-b border-gray-800 bg-gradient-to-br from-hermes-950/40 via-gray-950 to-gray-950 px-6 py-8">
+            <div className="flex-shrink-0 border-b border-hermes-700/20 px-6 py-10 bg-gradient-to-br from-hermes-950/40 via-ink-900/40 to-ink-950">
               <div className="max-w-3xl mx-auto">
-                <span className="inline-block text-[10px] font-mono uppercase tracking-widest text-hermes-400 border border-hermes-700/60 bg-hermes-950/40 rounded-full px-2.5 py-0.5 mb-3">
+                <span className="pill-cyan mb-4">
                   Live · Sepolia + 0G
                 </span>
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 leading-tight">
+                <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-100 leading-tight">
                   Ask an AI quorum.
                   <br />
-                  <span className="text-hermes-400">No backend in the loop.</span>
+                  <span className="text-gradient-neon">No backend in the loop.</span>
                 </h1>
                 <p className="mt-4 text-gray-400 leading-relaxed max-w-2xl">
                   You hold an ENS subdomain. The coordinator and three quorum
                   agents each hold one too. Your question travels as a sealed
-                  envelope on <strong className="text-gray-200">0G Storage</strong>,
+                  envelope on <strong className="text-hermes-200">0G Storage</strong>,
                   pinned by a content hash on{" "}
-                  <strong className="text-gray-200">HermesInbox</strong> —
+                  <strong className="text-hermes-200">HermesInbox</strong> —
                   ENS resolves identities, the chain provides the rendezvous,
                   the agents are autonomous.
                 </p>
@@ -382,25 +371,23 @@ export default function QuorumPage() {
           )}
 
           {/* Submit panel */}
-          <div className="flex-shrink-0 border-b border-gray-800 p-4 sm:p-6">
+          <div className="flex-shrink-0 border-b border-hermes-700/20 p-4 sm:p-6 bg-ink-900/30">
             <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-200">
+                <h3 className="font-display text-sm uppercase tracking-[0.2em] text-gray-200">
                   Ask the quorum
                 </h3>
-                <span className="text-[10px] font-mono uppercase tracking-widest rounded px-2 py-0.5 border border-emerald-700 text-emerald-400">
-                  public · sealed DM
-                </span>
+                <span className="pill-mint">public · sealed DM</span>
               </div>
               <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                Anyone with a <code className="text-hermes-400">*.users.hermes.eth</code>{" "}
+                Anyone with a <code className="text-hermes-300">*.users.hermes.eth</code>{" "}
                 subdomain can ask. The body is encrypted to{" "}
                 <code className="text-gray-300">{COORDINATOR_ENS}</code>'s X25519
                 pubkey — the coordinator is the only party that can read your
                 question; everyone watching the chain sees opaque ciphertext.
               </p>
               <textarea
-                className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm text-gray-200 font-mono resize-none focus:border-hermes-600 focus:outline-none disabled:opacity-50 transition-colors"
+                className="w-full rounded-lg border border-hermes-700/40 bg-ink-900/80 p-3 text-sm text-gray-200 font-mono resize-none focus:border-hermes-400 focus:shadow-neon-cyan focus:outline-none disabled:opacity-50 transition-all"
                 rows={4}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -409,7 +396,7 @@ export default function QuorumPage() {
               />
               <div className="flex items-center gap-3 mt-3 flex-wrap">
                 <button
-                  className="rounded-md bg-hermes-600 px-4 py-2 text-sm font-semibold hover:bg-hermes-500 disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="btn-neon !px-5 !py-2.5"
                   onClick={submit}
                   disabled={
                     submitting || !draft.trim() || user.status !== "ready"
@@ -421,10 +408,10 @@ export default function QuorumPage() {
                       sending…
                     </>
                   ) : (
-                    "Seal & send to coordinator"
+                    "Seal & send →"
                   )}
                 </button>
-                <span className="text-[11px] font-mono text-gray-600">
+                <span className="text-[11px] font-mono text-gray-500">
                   1 wallet sig · 1 0G upload · 1 Sepolia tx
                 </span>
                 {submitError && (
@@ -453,28 +440,26 @@ export default function QuorumPage() {
               {activeRequest && (
                 <>
                   {/* Question card */}
-                  <div className="rounded-lg border border-hermes-800 bg-hermes-950/30 p-4">
+                  <div className="panel-neon p-5">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-mono uppercase tracking-widest text-hermes-300">
-                        Your question
-                      </p>
-                      <span className="text-xs font-mono text-gray-600">
+                      <p className="eyebrow text-hermes-300">Your question</p>
+                      <span className="text-[11px] font-mono text-gray-500">
                         #{activeRequest.requestId.slice(0, 8)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-100 whitespace-pre-wrap leading-relaxed">
                       {activeRequest.markdown}
                     </p>
-                    <div className="mt-3 pt-3 border-t border-hermes-900/50 flex flex-wrap gap-3 text-[11px] font-mono text-gray-600">
+                    <div className="mt-4 pt-3 border-t border-hermes-700/20 flex flex-wrap gap-3 text-[11px] font-mono text-gray-500">
                       <a
                         href={`https://sepolia.etherscan.io/tx/${activeRequest.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-hermes-400 hover:text-hermes-300"
+                        className="text-hermes-300 hover:text-hermes-200"
                       >
                         request tx ↗ {activeRequest.txHash.slice(0, 12)}…
                       </a>
-                      <span>0G root: {activeRequest.rootHash.slice(0, 14)}…</span>
+                      <span>0G root · {activeRequest.rootHash.slice(0, 14)}…</span>
                       <span>
                         sent {new Date(activeRequest.submittedAt).toLocaleTimeString()}
                       </span>
@@ -486,9 +471,9 @@ export default function QuorumPage() {
 
                   {/* Member-only internal swarm view */}
                   {isBiomeMember && memberTimeline.length > 0 && (
-                    <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-4">
-                      <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-3">
-                        Internal swarm activity (member view)
+                    <div className="panel-soft p-4">
+                      <p className="eyebrow mb-3">
+                        Internal swarm activity · member view
                       </p>
                       <div className="space-y-2">
                         {memberTimeline.map((row, i) => (
@@ -496,19 +481,19 @@ export default function QuorumPage() {
                             key={`${row.txHash}-${i}`}
                             className="flex items-start gap-3 text-sm"
                           >
-                            <span className="text-emerald-400 mt-0.5">✓</span>
+                            <span className="text-mint-400 mt-0.5">✓</span>
                             <div className="flex-1 min-w-0">
                               <p className="text-gray-200">
                                 {row.label}
                                 {row.verdict && (
                                   <span
-                                    className={`ml-2 text-xs font-mono px-1.5 py-0.5 rounded border ${VERDICT_BG[row.verdict] ?? ""} ${VERDICT_COLORS[row.verdict] ?? ""}`}
+                                    className={`ml-2 text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded border ${VERDICT_BG[row.verdict] ?? ""} ${VERDICT_COLORS[row.verdict] ?? ""}`}
                                   >
                                     {row.verdict}
                                   </span>
                                 )}
                               </p>
-                              <p className="text-xs text-gray-600 font-mono">
+                              <p className="text-[11px] text-gray-500 font-mono">
                                 {new Date(row.ts).toLocaleTimeString()}
                                 {row.detail && ` · ${row.detail}`}
                               </p>
@@ -517,7 +502,7 @@ export default function QuorumPage() {
                               href={`https://sepolia.etherscan.io/tx/${row.txHash}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs font-mono text-hermes-400 hover:text-hermes-300 flex-shrink-0"
+                              className="text-[11px] font-mono text-hermes-300 hover:text-hermes-200 flex-shrink-0"
                             >
                               {row.txHash.slice(0, 10)}…
                             </a>
@@ -529,26 +514,26 @@ export default function QuorumPage() {
 
                   {/* Final response */}
                   {activeResponse && (
-                    <div className="rounded-lg border border-emerald-800 bg-emerald-950/20 p-5">
+                    <div className="panel-neon-flux p-5">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-xs font-mono font-semibold uppercase tracking-widest text-emerald-300">
+                        <p className="eyebrow text-flux-300">
                           Coordinator → you
-                        </h4>
+                        </p>
                         <TallyPills tally={activeResponse.tally} />
                       </div>
                       <pre className="whitespace-pre-wrap text-sm text-gray-100 font-sans leading-relaxed">
                         {activeResponse.markdown}
                       </pre>
-                      <div className="mt-4 pt-3 border-t border-emerald-900 flex flex-wrap gap-3 text-[11px] font-mono text-gray-600">
+                      <div className="mt-4 pt-3 border-t border-flux-900/40 flex flex-wrap gap-3 text-[11px] font-mono text-gray-500">
                         <a
                           href={`https://sepolia.etherscan.io/tx/${activeResponse.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-hermes-400 hover:text-hermes-300"
+                          className="text-hermes-300 hover:text-hermes-200"
                         >
                           response tx ↗ {activeResponse.txHash.slice(0, 12)}…
                         </a>
-                        <span>0G root: {activeResponse.rootHash.slice(0, 14)}…</span>
+                        <span>0G root · {activeResponse.rootHash.slice(0, 14)}…</span>
                         <span>
                           received{" "}
                           {new Date(activeResponse.ts).toLocaleTimeString()}
@@ -562,7 +547,8 @@ export default function QuorumPage() {
           </div>
         </main>
       </div>
-    </div>
+      </div>
+    </HermesShell>
   );
 }
 
@@ -576,12 +562,12 @@ function FlowCard({
   body: string;
 }) {
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+    <div className="panel-soft p-3">
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-hermes-600/20 border border-hermes-600 text-hermes-300 text-xs font-mono font-semibold">
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-hermes-500/15 border border-hermes-500/60 text-hermes-200 text-[11px] font-mono font-semibold shadow-neon-cyan">
           {n}
         </span>
-        <p className="text-sm font-semibold text-gray-100">{title}</p>
+        <p className="font-display text-sm text-gray-100">{title}</p>
       </div>
       <p className="text-xs text-gray-500 leading-relaxed">{body}</p>
     </div>
@@ -596,10 +582,8 @@ function ProgressTracker({ step }: { step: 0 | 1 | 2 | 3 }) {
     { label: "Synthesised", desc: "Coordinator wrote the final report." },
   ];
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-4">
-      <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-4">
-        Round progress
-      </p>
+    <div className="panel-soft p-4">
+      <p className="eyebrow mb-4">Round progress</p>
       <ol className="space-y-3">
         {steps.map((s, i) => {
           const state =
@@ -607,12 +591,12 @@ function ProgressTracker({ step }: { step: 0 | 1 | 2 | 3 }) {
           return (
             <li key={s.label} className="flex items-start gap-3">
               <div
-                className={`flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-mono ${
+                className={`flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-mono font-semibold ${
                   state === "done"
-                    ? "bg-emerald-500/20 border border-emerald-600 text-emerald-400"
+                    ? "bg-mint-500/15 border border-mint-500/60 text-mint-400 shadow-neon-mint"
                     : state === "active"
-                      ? "bg-hermes-500/20 border border-hermes-600 text-hermes-300 animate-pulse"
-                      : "bg-gray-800 border border-gray-700 text-gray-600"
+                      ? "bg-hermes-500/15 border border-hermes-500/60 text-hermes-200 shadow-neon-cyan animate-pulse"
+                      : "bg-ink-800 border border-ink-600 text-gray-600"
                 }`}
               >
                 {state === "done" ? "✓" : i + 1}
@@ -620,12 +604,12 @@ function ProgressTracker({ step }: { step: 0 | 1 | 2 | 3 }) {
               <div className="flex-1">
                 <p
                   className={`text-sm ${
-                    state === "pending" ? "text-gray-500" : "text-gray-200"
+                    state === "pending" ? "text-gray-500" : "text-gray-100"
                   }`}
                 >
                   {s.label}
                 </p>
-                <p className="text-xs text-gray-600">{s.desc}</p>
+                <p className="text-xs text-gray-500">{s.desc}</p>
               </div>
             </li>
           );
@@ -668,14 +652,14 @@ function UserSetupBanner({ user }: { user: ReturnType<typeof useUserAgent> }) {
   const label = labels[user.status];
   if (!label) return null;
   return (
-    <div className="flex-shrink-0 px-4 py-2 border-b border-yellow-900 bg-yellow-950/20 text-sm flex items-center gap-3">
-      <span className="text-yellow-400">⚠</span>
-      <span className="text-gray-300 flex-1">{label}</span>
+    <div className="flex-shrink-0 px-4 py-2 border-b border-flux-700/30 bg-flux-950/30 text-sm flex items-center gap-3">
+      <span className="text-flux-300">⚠</span>
+      <span className="text-gray-200 flex-1">{label}</span>
       {user.error && <span className="text-xs text-red-400">{user.error}</span>}
       <button
         onClick={actions[user.status]}
         disabled={user.busy}
-        className="rounded-md bg-hermes-600 px-3 py-1 text-xs font-semibold hover:bg-hermes-500 disabled:opacity-50"
+        className="btn-neon !px-3 !py-1 !text-[11px]"
       >
         {user.busy ? "…" : "continue"}
       </button>
