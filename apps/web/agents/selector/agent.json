@@ -1,0 +1,8 @@
+{
+  "ens": "selector.hermes.eth",
+  "address": "",
+  "roles": ["selector"],
+  "x25519PubKey": "",
+  "ensSubnameRegistered": false,
+  "x25519Version": 9
+}

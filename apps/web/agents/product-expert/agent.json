@@ -1,0 +1,8 @@
+{
+  "ens": "product.experts.hermes.eth",
+  "address": "",
+  "roles": ["expert"],
+  "x25519PubKey": "",
+  "ensSubnameRegistered": false,
+  "x25519Version": 12
+}
