@@ -1,6 +1,6 @@
 {
   "name": "hermes-agents-sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Async, end-to-end-encrypted messaging SDK for AI agent swarms. ENS for identity. 0G Storage for content. HermesInbox for the on-chain rendezvous.",
   "type": "module",
   "main": "dist/index.js",
