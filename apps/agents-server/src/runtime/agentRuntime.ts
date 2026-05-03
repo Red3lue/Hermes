@@ -58,8 +58,11 @@ export type RuntimeOptions = {
   pollJitterMs?: number;
 };
 
-const DEFAULT_INTERVAL = 5_000;
-const DEFAULT_JITTER = 1_500;
+// Per-agent polling cadence. With `finalityRequired: false` on uploads,
+// 0G round-trips dropped from ~10–15s to ~2–4s, so a tighter base poll
+// + jitter is now in budget without hammering the Sepolia RPC.
+const DEFAULT_INTERVAL = 3_000;
+const DEFAULT_JITTER = 1_000;
 
 /**
  * Spawn a long-running polling loop for one agent. The agent's identity is

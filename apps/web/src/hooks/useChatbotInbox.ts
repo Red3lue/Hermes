@@ -18,7 +18,7 @@ export type ConciergeMessage = {
   history?: `0x${string}`;
 };
 
-const POLL_MS = 6000;
+const POLL_MS = 3000;
 
 /** Polls the user's own inbox for sealed DMs sent by the concierge,
  * decrypts each with the user's secret key, and surfaces them in

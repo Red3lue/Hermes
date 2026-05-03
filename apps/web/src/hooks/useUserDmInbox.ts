@@ -20,7 +20,7 @@ export type UserResponse = {
   rootHash: `0x${string}`;
 };
 
-const POLL_MS = 6000;
+const POLL_MS = 3000;
 
 /**
  * Polls the user's own inbox node on HermesInbox (Sepolia), downloads each

@@ -21,7 +21,7 @@ export type SelectorResponse = {
   rootHash: `0x${string}`;
 };
 
-const POLL_MS = 6000;
+const POLL_MS = 3000;
 
 /** Polls the user's own inbox for `final-response` DMs from the
  * Selector. Decrypts with the user's secret key, decodes the inner
