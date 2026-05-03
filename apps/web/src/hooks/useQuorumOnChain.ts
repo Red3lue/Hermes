@@ -55,7 +55,7 @@ export type QuorumState = {
   reportEvents: ReportEvent[]; // reporter outputs
 };
 
-const POLL_MS = 6000;
+const POLL_MS = 3000;
 
 /**
  * Polls the biome inbox on Sepolia, downloads each blob from 0G via the

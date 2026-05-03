@@ -18,7 +18,7 @@ Two AI agents, possibly built on different frameworks, possibly running on machi
 
 **ENS already solves identity. 0G already solves cheap, content-addressed storage. Hermes composes them into a coordination layer.**
 
-Sender resolves an ENS name → encrypts to the recipient's published X25519 pubkey → uploads the sealed envelope to 0G → appends the rootHash to a tiny on-chain inbox indexed by recipient namehash. Recipient polls the chain, downloads the blob, verifies the signature, decrypts. No middleman. Every agent's identity, capabilities, and "soul" are addressable from any browser via a single ENS name.
+Sender resolves an ENS name → encrypts to the recipient's published X25519 pubkey → uploads the sealed envelope to 0G → appends the rootHash to a tiny on-chain inbox indexed by recipient namehash. Recipient polls the chain, downloads the blob, verifies the signature, decrypts. No middleman. Every agent's identity, capabilities, and **encrypted "soul" (Anima)** are addressable from any browser via a single ENS name. Editing an agent's Anima — owner-only, on chain — changes the agent's behaviour at runtime.
 
 ---
 
@@ -27,15 +27,26 @@ Sender resolves an ENS name → encrypts to the recipient's published X25519 pub
 This isn't a deck. Every line below corresponds to a working flow you can verify on Sepolia and 0G Galileo right now.
 
 ### 🤝 1:1 encrypted chat with an autonomous agent
-Open `/demos/chatbot`, sign in with any wallet, type a message. Your text is sealed for the **concierge** agent's pubkey, uploaded to 0G, the rootHash is appended to `HermesInbox`. The concierge runtime polls the chain, decrypts, calls Claude with its persona + per-conversation history, replies via the same path back to your inbox. **Multi-thread:** create new conversations side-by-side; each gets its own walkable on-chain history chain.
+Open `/demos/chatbot`, sign in with any wallet, type a message. Your text is sealed for the **concierge** agent's pubkey, uploaded to 0G, the rootHash is appended to `HermesInbox`. The concierge runtime polls the chain, decrypts, calls Claude with its persona + per-conversation history, replies via the same path back to your inbox. **Multi-thread:** create new conversations side-by-side; each gets its own walkable on-chain HistoryManifest chain so a fresh browser can recover the full transcript from chain alone.
 
 ### 🗳️ Public sealed request → 3-agent quorum → synthesised reply
-Open `/demos/quorum`, ask a question. Your question is sealed for the **coordinator's** pubkey. The coordinator decrypts, fans the question out as sealed DMs to three independently-personaed agents (`architect.hermes.eth`, `pragmatist.hermes.eth`, `skeptic.hermes.eth`), each of which calls Claude from their own perspective and returns a verdict. The coordinator tallies, synthesises a final report from all three viewpoints, and sends it back to your inbox — all on chain.
+Open `/demos/quorum`, ask a question. Your question is sealed for the **coordinator's** pubkey. The coordinator decrypts, fans the question out as sealed DMs to three independently-personaed agents (`architect.hermes.eth`, `pragmatist.hermes.eth`, `skeptic.hermes.eth`), each of which calls Claude from their own perspective and returns a verdict. The coordinator tallies, synthesises a final report incorporating all three viewpoints, and DMs it back to your inbox. All on chain. No HTTP coordination plane.
+
+### 🧭 Anima as routing manifest — the Selector demo
+Open `/demos/selector`. The **Selector** is an ENS-named agent whose **Anima IS a routing manifest** — a markdown list of expert ENS names and the domain each handles. On every inbound user request the Selector:
+
+1. Reads its own (encrypted, signed, ENS-pinned) Anima.
+2. Calls Claude with `persona + Anima + the question` and emits a JSON routing decision.
+3. Forwards the question as a sealed DM to whichever expert it picked (`tech.experts.hermes.eth`, `legal.experts.hermes.eth`, or `product.experts.hermes.eth`).
+4. The expert reads its **own** Anima (its domain expertise + voice) and answers from there.
+5. The Selector wraps the expert's reply with `"routed to <expert> because <reason>"` + a footer letting the user DM the expert directly for follow-up.
+
+**Editing the Selector's Anima at runtime — owner-only, one Sepolia tx — changes routing behaviour live.** Soul becomes behaviour.
 
 ### 🏛️ Build your own agent or swarm
-- `/agents/new` — mint your own ENS subname, derive an X25519 keypair from your wallet sig (no key storage, fully recoverable), publish ENS records, optionally publish an encrypted Anima.
-- `/biomes/new` — provision a multi-agent biome with a fresh symmetric key, wrapped per-member, with a charter, members pre-populated, signed BiomeDoc on 0G.
-- `/biomes/<name>` — owner-only add/remove members (re-keys on remove), publish/edit the encrypted Animus, view roster + activity.
+- `/agents/new` — mint your own ENS subname, derive an X25519 keypair from your wallet sig (no key storage; fully recoverable from the wallet), publish ENS records, optionally publish an initial encrypted Anima.
+- `/biomes/new` — provision a multi-agent biome with a fresh symmetric key, wrapped per-member, signed BiomeDoc on 0G.
+- `/biomes/<name>` — owner-only add/remove members (re-keys K on remove), publish/edit the encrypted Animus, view roster + activity.
 
 ### 🪪 Anima & Animus — encrypted "souls" tied to ENS
 Two named, verifiable, encrypted blobs that anchor identity at the *content* layer:
@@ -43,7 +54,7 @@ Two named, verifiable, encrypted blobs that anchor identity at the *content* lay
 - **Anima** = the soul of an *agent*. Signed by the agent's owner, encrypted to the agent's own X25519 keypair (self-box), pinned via `text("hermes.anima")` on the agent's ENS subname. Only the runtime (which holds the keystore) and the owner (who can re-derive from their wallet) can decrypt. Other parties see ciphertext.
 - **Animus** = the soul of a *biome*. Signed by the biome owner, encrypted with the biome's symmetric key, pinned via `text("biome.animus")`. Members decrypt with their wrapped key copy; non-members see ciphertext.
 
-Agents read both before answering — that's how they know "who I am" (Anima) and "what game we're playing" (Animus). All Owner-Only-Mutable, on-chain, verifiable, content-addressed.
+Agents read both before answering — that's how they know "who I am" (Anima) and "what game we're playing" (Animus). The Selector demo above shows the strongest application: the routing decision *is* the Anima.
 
 ---
 
@@ -57,29 +68,31 @@ ENS isn't a username here — it's the **public-key infrastructure** for the ent
 | `addr` | The agent's signing wallet — verifies every signature on every envelope |
 | `hermes.pubkey` | The agent's X25519 encryption pubkey — used to seal every DM, wrap every biome key |
 | `hermes.inbox` | `<inboxContract>:<ens>` — where to drop messages addressed to this agent |
-| `hermes.anima` | 0G rootHash → encrypted, signed AnimaDoc |
+| `hermes.anima` | 0G rootHash → encrypted, signed AnimaDoc (driving routing in the Selector demo) |
 | `biome.root` / `biome.version` | 0G rootHash → BiomeDoc + version, used for membership rotation |
 | `biome.animus` | 0G rootHash → encrypted, signed AnimusDoc |
 
-The chain enforces ownership at every level. Resolver writes (`setText`) revert unless caller owns the subname (Registry-direct or NameWrapper-mediated). Subname minting flows through standard ENS contracts via `@ensdomains/ensjs`. Discovery handles **both** wrapped and unwrapped subnames correctly via `effectiveOwner()` (Registry first, NameWrapper fallback). No CCIP-Read shortcuts — every agent is real on-chain.
+The chain enforces ownership at every level. Resolver writes (`setText`) revert unless caller owns the subname (Registry-direct or NameWrapper-mediated). Subname minting flows through standard ENS contracts via `@ensdomains/ensjs`. Discovery handles **both** wrapped and unwrapped subnames correctly via `effectiveOwner()` (Registry first, NameWrapper fallback). No CCIP-Read shortcuts — every agent is real on-chain, including the four-level hierarchy `tech.experts.hermes.eth`.
 
 ### ENS — Most Creative Use of ENS
 - **ENS as encryption identity.** The pubkey for sealing DMs to an agent IS an ENS text record. Rotating keys = rotating one text record. Cross-runtime, cross-framework agents recognise each other purely by name → record lookup.
-- **ENS-pinned encrypted "souls".** AnimaDoc and AnimusDoc treat ENS as the discovery anchor for *encrypted JSON*. The chain says "where" and "who signed"; only the right keyholder can read. ENS becomes the address book for cryptographically-gated agent personality and shared swarm context.
+- **ENS-pinned encrypted "souls".** AnimaDoc and AnimusDoc treat ENS as the discovery anchor for *encrypted JSON*. The chain says "where" and "who signed"; only the right keyholder can read.
+- **Anima as routing manifest.** In the Selector demo, an agent's encrypted Anima IS its decision-making logic. Edit it — one Sepolia tx — and the agent's behaviour at runtime changes. ENS becomes the address book for *cryptographically-gated, owner-controlled, agent-readable behaviour*.
 - **ENS-as-conversation-thread.** Every chat between user and agent uses a randomly-generated `thread` tag scoped to `(user-ens, agent-ens, thread)`. Each thread maintains its own walkable HistoryManifest chain (encrypted, signed, on 0G), so a user can resume any past conversation on any browser by walking the chain backwards from the latest reply.
-- **Owner-mutable everything.** Agents and biomes are alive: their charter, soul, members, and crypto keys can be rotated by their ENS owner with one transaction. Subname-as-identity scales to the agent population.
+- **Owner-mutable everything.** Agents and biomes are alive: their charter, soul, members, and crypto keys can all be rotated by their ENS owner with one transaction. Subname-as-identity scales to the agent population.
 
 ### 0G — Best Autonomous Agents, Swarms & iNFT Innovations
 A working autonomous swarm, on chain, end-to-end:
 
-- **Five concurrent polling runtimes** (coordinator + 3 quorum members + concierge), each with their own ENS identity, X25519 keypair, signed Anima, runtime-decrypted before LLM calls.
-- **Three rounds per second** are sustainable on testnet (load-tested with the deployer's gas budget).
+- **Eight concurrent polling runtimes** in active use today: coordinator + 3 quorum members + concierge + selector + 3 experts. Each has its own ENS identity, X25519 keypair, signed Anima, runtime-decrypted before LLM calls.
+- **Two distinct swarm topologies in one deployment:** the *quorum* (parallel deliberation + synthesis) and the *selector* (Anima-driven routing). Same SDK, same on-chain primitives.
 - **Sealed dispatch + tally + synthesis** all carry signed proofs back to the user's inbox. Audit trail = the chain itself.
-- **Public access** — any wallet that holds a `<label>.users.hermes.eth` subname (minted free in one tx) can submit to the quorum. No allowlist, no API key.
+- **Public access** — any wallet that holds a `<label>.users.hermes.eth` subname (minted free in one tx) can submit to either swarm. No allowlist, no API key.
 - **Programmable membership.** Adding/removing a quorum member is a wrap-rotation on the BiomeDoc; future rounds automatically include the new agent. The owner doesn't redeploy anything.
+- **Round-trip latency ~25–35s** under `finalityRequired: false` 0G uploads + 3-second poll cadence.
 
 ### 0G — Best Tooling & Core Extensions
-A published [npm package](https://www.npmjs.com/package/hermes-agents-sdk) that any team can `npm install` to get everything:
+A published [npm package](https://www.npmjs.com/package/hermes-agents-sdk) (`hermes-agents-sdk`, currently 0.1.2) that any team can install to get everything:
 
 ```ts
 import { Hermes } from "hermes-agents-sdk";
@@ -122,9 +135,7 @@ Three layers, each doing what it's good at, joined by content-addressed pointers
               ▼                              │
 ┌────────────────────────────────────────────────────────────────────┐
 │ HermesInbox (Sepolia, 30 lines of Solidity) — RENDEZVOUS           │
-│   event Message(bytes32 indexed toNode, address indexed from,      │
-│                 bytes32 indexed replyTo, bytes32 rootHash,         │
-│                 uint256 timestamp)                                 │
+│   event Message(toNode, from, replyTo, rootHash, ts)               │
 │   send(toNode, rootHash) / reply(toNode, replyTo, rootHash)        │
 └────────────────────────────────────────────────────────────────────┘
               │                              ▲
@@ -156,7 +167,22 @@ A single chatbot exchange:
 | 7 | Sepolia | `HermesInbox.send(namehash(user), R₂)` |
 | 8 | (user's browser polls Sepolia, pulls R₂ from 0G, decrypts, renders) |
 
-Two Sepolia txs, four 0G uploads. All inspectable on Etherscan + the 0G explorer by rootHash. The same flow scales to a 4-agent quorum at ~10 0G uploads + 4 Sepolia txs per round.
+Two Sepolia txs, four 0G uploads. All inspectable on Etherscan + the 0G explorer by rootHash.
+
+A Selector round adds two more hops (selector → expert, expert → selector) and ~6 more 0G uploads + 4 Sepolia txs. Round-trip ~25–35s end-to-end with the speedups described in the next section.
+
+---
+
+## Performance posture
+
+We tuned latency aggressively for the demo:
+
+- **`finalityRequired: false`** on 0G uploads — skips the post-tx storage-node sync wait. Each upload drops from ~10–15s to ~2–4s on Galileo testnet.
+- **Agent runtime poll cadence 3s + 1s jitter** (was 5s + 1.5s) — paired with the upload speedup, the next polling tick sees a freshly-landed tx within a single round-trip.
+- **FE poll cadence 3s** (was 6s) — halves user-visible latency on the chat / quorum / selector / dashboard pages.
+- **Withretry-on-nonce-collision** — the shared deployer wallet sees concurrent txs from up to 8 agent runtimes. `agentRuntime.ts` retries `REPLACEMENT_UNDERPRICED` up to 4 times with exponential backoff (1.5s → 8s) so collisions don't drop messages.
+
+These are in `packages/sdk/src/storage.ts`, `apps/agents-server/src/runtime/agentRuntime.ts`, and the four `useXxxInbox` hooks under `apps/web/src/hooks/`. Trade-offs documented inline.
 
 ---
 
@@ -178,25 +204,27 @@ Hermes/
 │   │       ├── animus.ts          # Per-biome encrypted with K, signed
 │   │       ├── policy.ts          # Send/receive/bridge gates
 │   │       ├── keystore.ts        # File-backed keypair + last-history-root cache
-│   │       └── storage.ts         # 0G upload/download wrapper
+│   │       └── storage.ts         # 0G upload/download wrapper (finalityRequired: false)
 │   └── contracts/
 │       └── src/HermesInbox.sol    # 30 lines, deployed at 0x1cCD7DDb…CDD8
 ├── apps/
 │   ├── agents-server/             # Per-agent polling runtimes (Express + Anthropic)
 │   │   └── src/
 │   │       ├── chatbot/           # 1:1 concierge handler
-│   │       ├── quorum/            # coordinator + member handlers (no reporter; see notes)
+│   │       ├── quorum/            # coordinator + member handlers (no reporter; coordinator does inline synthesis)
+│   │       ├── selector/          # Anima-driven routing demo: selector + expert handlers
 │   │       ├── runtime/           # Polling loop, keystore prep, soul auto-publish
 │   │       └── routes/            # /register-user, /register-biome, /register-agent, /blob (HTTPS proxy to 0G)
 │   └── web/                       # React + Reown AppKit FE (deployed to Cloud Run)
 │       ├── src/
-│       │   ├── pages/             # Pitch / Dashboard / Demos / Quorum / Chatbot / Agent* / Biome*
+│       │   ├── pages/             # Pitch / Dashboard / Demos / Quorum / Chatbot / Selector / Agent* / Biome*
 │       │   ├── components/        # AnimaPanel, AnimusPanel, BiomeMembersPanel, …
-│       │   ├── hooks/             # useChatbotInbox, useChatHistory, useQuorumOnChain, useUserAgent…
-│       │   └── lib/               # chatClient, quorumClient, animaClient, ensSubnames…
+│       │   ├── hooks/             # useChatbotInbox, useChatHistory, useQuorumOnChain, useSelectorInbox, useUserAgent…
+│       │   └── lib/               # chatClient, quorumClient, selectorClient, animaClient, ensSubnames…
 │       └── agents/                # On-disk persona / anima sources for built-in agents
 ├── scripts/
 │   ├── deploy-web.sh              # one-shot Cloud Run rebuild + deploy for the FE
+│   ├── deploy-agents-server.sh    # one-shot Cloud Run rebuild + deploy for the agents-server
 │   └── …                          # ENS scaffolding scripts
 └── DEPLOY.md                      # Full Cloud Run deployment guide
 ```
@@ -207,9 +235,9 @@ Hermes/
 
 | Thing | Address / Name |
 |---|---|
-| HermesInbox contract | `0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8` (Sepolia) |
+| HermesInbox contract | [`0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8`](https://sepolia.etherscan.io/address/0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8) (Sepolia) |
 | Parent ENS | `hermes.eth` |
-| Active agents | `coordinator.hermes.eth`, `architect.hermes.eth`, `pragmatist.hermes.eth`, `skeptic.hermes.eth`, `concierge.hermes.eth` |
+| Active agents | `coordinator.hermes.eth`, `architect.hermes.eth`, `pragmatist.hermes.eth`, `skeptic.hermes.eth`, `concierge.hermes.eth`, `selector.hermes.eth`, `tech.experts.hermes.eth`, `legal.experts.hermes.eth`, `product.experts.hermes.eth` |
 | Demo biome | `quorumv2.biomes.hermes.eth` |
 | User-issued ENS pattern | `<label>.users.hermes.eth` (one per connecting wallet, gas paid by deployer at mint time) |
 | 0G testnet | Galileo, `evmrpc-testnet.0g.ai` + `indexer-storage-testnet-turbo.0g.ai` |
@@ -283,9 +311,9 @@ const result = await createBiome(
     name: "research-pod.biomes.yourdomain.eth",
     goal: "weekly competitor analysis",
     members: [
-      { ens: "alice.eth",   pubkey: "..." },
-      { ens: "researcher.eth", pubkey: "..." },
-      { ens: "critic.eth", pubkey: "..." },
+      { ens: "alice.eth",       pubkey: "..." },
+      { ens: "researcher.eth",  pubkey: "..." },
+      { ens: "critic.eth",      pubkey: "..." },
     ],
   },
 );
@@ -314,9 +342,10 @@ for await (const entry of walkHistory(
 1. **Open the live demo.** https://hermes-web-734709088945.us-central1.run.app
 2. **Connect a fresh wallet.** Sign the deterministic message → register an ENS subname (mint paid by deployer) → set your Hermes records (you sign these — they bind your encryption pubkey to your ENS name).
 3. **`/demos/chatbot`** → say hello. Watch the bubble flow. Click any tx hash to see the actual on-chain `Message(toNode, ..., rootHash, ts)` event on Etherscan.
-4. **`/demos/quorum`** → ask: "Should an autonomous AI agent on Sepolia testnet be allowed to spend more than 0.01 ETH in a single transaction without owner re-confirmation?" Watch the architect, pragmatist, and skeptic deliberate, then the coordinator synthesise.
-5. **`/dashboard`** → see the agents and biomes you own. Open one to see the encrypted Anima / Animus, the on-chain history chain root, and the BiomeDoc roster.
-6. **Etherscan** → filter [HermesInbox events](https://sepolia.etherscan.io/address/0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8#events) by your namehash. Every interaction you just did is there.
+4. **`/demos/selector`** → ask: "My API integration returns 401 on every refresh — what's the most likely cause?" Watch the routing pill show `routed to tech` and the tech expert answer with engineer voice. Try the same with a privacy or pricing question and see the router pivot.
+5. **`/demos/quorum`** → ask: "Should an autonomous AI agent on Sepolia testnet be allowed to spend more than 0.01 ETH in a single transaction without owner re-confirmation?" Watch the architect, pragmatist, and skeptic deliberate, then the coordinator synthesise.
+6. **`/dashboard`** → see the agents and biomes you own. Open one to see the encrypted Anima / Animus, the on-chain history chain root, and the BiomeDoc roster.
+7. **Etherscan** → filter [HermesInbox events](https://sepolia.etherscan.io/address/0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8#events) by your namehash. Every interaction you just did is there.
 
 ---
 
@@ -324,6 +353,7 @@ for await (const entry of walkHistory(
 
 - **An npm-published TypeScript SDK** that abstracts the entire stack: 5 lines to send a message, 10 lines to spin up an agent, 20 lines to mint a biome.
 - **A working reference deployment** showing exactly how to scale this — Dockerfiles + Cloud Run guide for the agents-server (min-instances=1, CPU always-allocated for polling loops) and the FE (nginx, scales to zero).
+- **One-shot deploy scripts** in `scripts/` (`deploy-web.sh`, `deploy-agents-server.sh`) reading from a single gitignored `.env.deploy` file.
 - **A 30-line Solidity contract** that's the only on-chain code you need to operate the protocol on any EVM chain.
 - **Plug-and-play for any LLM.** The runtime calls Claude in the demo but the LLM provider is one method swap.
 
@@ -333,7 +363,7 @@ for await (const entry of walkHistory(
 
 - **Per-agent funded wallets.** All agents currently sign with the shared deployer key. Mitigated by retry-with-backoff on `REPLACEMENT_UNDERPRICED`; not eliminated. Roadmap: HD-derive a wallet per agent, top up from deployer.
 - **Cross-device user-chain recovery.** A user's history-chain root for their own outgoing messages lives in localStorage. Resuming on a fresh device requires re-discovering it — designed (publish via `text("hermes.userChain.<peer>.<thread>")`) but not shipped.
-- **0G storage node TLS.** The 0G storage nodes serve plain HTTP. The deployed FE proxies through the agents-server's HTTPS endpoint to avoid Mixed Content blocks. Pure FE-only reads will work the moment 0G ships HTTPS endpoints; both code paths are kept.
+- **0G storage node TLS.** The 0G storage nodes serve plain HTTP. The deployed FE proxies through the agents-server's HTTPS endpoint to avoid Mixed Content blocks. Pure FE-only reads will work the moment 0G ships HTTPS endpoints; both code paths are kept (`downloadBlobDirect` + `downloadBlobViaProxy` in `browserStorage.ts`).
 - **CCIP-Read for zero-gas subname issuance.** Documented; out of hackathon scope.
 
 These are deliberate cuts, not blockers. The protocol works as built; the SDK is published; the demo runs.
@@ -351,11 +381,18 @@ pnpm install
 pnpm build
 
 # In two terminals:
-pnpm --filter @hermes/agents-server dev    # boots quorum + chatbot runtimes
+pnpm --filter @hermes/agents-server dev    # boots quorum + chatbot + selector runtimes
 pnpm --filter @hermes/web dev              # http://localhost:5173
 ```
 
-Connect a wallet, complete user setup, and you're talking to four LLM-powered agents over Sepolia + 0G in under three minutes.
+If you want to deploy your own copy, see `DEPLOY.md` for the full Cloud Run guide, or just:
+
+```bash
+cp scripts/.env.deploy.example .env.deploy
+# edit .env.deploy with your project ID + Reown ID + agent server URL
+bash scripts/deploy-agents-server.sh
+bash scripts/deploy-web.sh
+```
 
 ---
 
@@ -363,9 +400,9 @@ Connect a wallet, complete user setup, and you're talking to four LLM-powered ag
 
 The agent ecosystem in 2026 is fragmented across runtimes (OpenClaw, ElizaOS, custom Python loops, Anthropic agents) and addressing schemes (UUIDs, walletconnect IDs, ad-hoc HTTP endpoints). Two agents on different stacks can't talk without one team giving up their substrate.
 
-Hermes makes the substrate **the chain itself**, identified by ENS, content-addressed by 0G. Any agent that speaks the SDK can DM any other agent in the world — even ones that aren't online — by name. Membership in a swarm is an on-chain BiomeDoc; the swarm's shared playbook is an encrypted ENS record. There's nothing to plug in, nothing to operate, nothing to bridge. It's the missing primitive.
+Hermes makes the substrate **the chain itself**, identified by ENS, content-addressed by 0G. Any agent that speaks the SDK can DM any other agent in the world — even ones that aren't online — by name. Membership in a swarm is an on-chain BiomeDoc; the swarm's shared playbook is an encrypted ENS record. Routing decisions can themselves be encrypted, ENS-pinned, owner-mutable Animas — change the soul, change the behaviour. There's nothing to plug in, nothing to operate, nothing to bridge.
 
-That's the bet.
+It's the missing primitive.
 
 ---
 

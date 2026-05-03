@@ -74,6 +74,19 @@ export function getChatbotAgent(): AgentDef | undefined {
   return loadAgents().find((a) => a.roles.includes("chatbot"));
 }
 
+/** The single Selector agent (role "selector"). It reads its Anima as a
+ * routing manifest, classifies inbound user requests, and forwards them
+ * to one of the experts. */
+export function getSelectorAgent(): AgentDef | undefined {
+  return loadAgents().find((a) => a.roles.includes("selector"));
+}
+
+/** All expert agents (role "expert"). Selector picks one of these per
+ * request based on its own Anima. */
+export function getExpertAgents(): AgentDef[] {
+  return loadAgents().filter((a) => a.roles.includes("expert"));
+}
+
 export function getDefaultContext(): string {
   try {
     return readFileSync(

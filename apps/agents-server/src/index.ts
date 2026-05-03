@@ -15,6 +15,7 @@ import { registerRouter } from "./routes/register.js";
 import { contextRouter } from "./routes/context.js";
 import { bootQuorum } from "./quorum/index.js";
 import { bootChatbot } from "./chatbot/index.js";
+import { bootSelector } from "./selector/index.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const QUORUM_BIOME =
@@ -59,6 +60,15 @@ async function bootstrap() {
     await bootChatbot();
   } catch (err) {
     console.error("[boot] chatbot boot failed:", (err as Error).message);
+  }
+
+  // Boot the selector demo: a routing agent (Selector) reads its Anima
+  // as a routing manifest and dispatches each user request to the right
+  // domain expert.
+  try {
+    await bootSelector();
+  } catch (err) {
+    console.error("[boot] selector boot failed:", (err as Error).message);
   }
 }
 

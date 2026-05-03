@@ -1,0 +1,10 @@
+{
+  "ens": "legal.experts.hermes.eth",
+  "address": "0x9F36F2581A4f5773cE1B7E25Bc2F83b1b3cFAC06",
+  "roles": [
+    "expert"
+  ],
+  "x25519PubKey": "7bL0Gj0BGpBcURQXfajkFAZLMpaa7b/0X/pARSmbdB4=",
+  "ensSubnameRegistered": true,
+  "x25519Version": 11
+}

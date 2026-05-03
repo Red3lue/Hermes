@@ -2,10 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { keccak256, toBytes } from "viem";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
-import { decryptMessage } from "hermes-agents-sdk";
+import {
+  decryptMessage,
+  generateKeyPairFromSignature,
+} from "hermes-agents-sdk";
 import { peekAnimaFE, publishAnima } from "@/lib/animaClient";
 import { effectiveOwner } from "@/lib/ensSubnames";
 import { useWallet } from "@/hooks/useWallet";
+import { useKnownAgents } from "@/hooks/useKnownAgents";
 
 const { encodeBase64 } = naclUtil;
 
@@ -25,9 +29,11 @@ type State =
   | { kind: "decrypted"; peek: Peek; content: string }
   | { kind: "error"; message: string };
 
-/** Derive the agent's X25519 keypair from a wallet sig over the per-agent
- * deterministic message. Same wallet+ens → same keypair. */
-async function deriveAgentX25519(
+/** Derive an agent's X25519 keypair via the FE per-ENS scheme. Used for
+ * user-created agents (those produced by `/agents/new`, which signs
+ * `Hermes agent identity v1: <ens>` to derive their keypair). Same
+ * wallet+ens → same keypair. */
+async function deriveAgentX25519PerEns(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   walletClient: any,
   address: `0x${string}`,
@@ -44,8 +50,47 @@ async function deriveAgentX25519(
   };
 }
 
+/** Pick the correct derivation scheme for an agent based on its known
+ * metadata.
+ *
+ *   - When the agent has a registered `x25519Version` in known-agents.json
+ *     (selector, experts, quorum, concierge — all server-seeded agents):
+ *     use the SDK's versioned scheme. Signs `hermes-keygen-v<N>`. This
+ *     matches what `seed-agents.ts` and the runtime keystore-prep use,
+ *     so the derived pubkey is the one published as `hermes.pubkey` on
+ *     ENS and the one referenced in any AnimaDoc the runtime built.
+ *
+ *   - Otherwise (the agent is unknown to the FE — typically a
+ *     user-created agent from /agents/new): fall back to the FE per-ENS
+ *     scheme. Signs `Hermes agent identity v1: <ens>`. This matches what
+ *     AgentNew.tsx uses on creation, so the derived pubkey matches the
+ *     `hermes.pubkey` AgentNew published.
+ *
+ * Critical for not breaking creation flows: this function never runs at
+ * agent or biome or user *creation* time. Those flows derive their own
+ * keys directly (AgentNew → `Hermes agent identity v1: <ens>`,
+ * BiomeNew → user's own keypair via `deriveX25519FromWallet`,
+ * useUserAgent → `Hermes user identity v1`). AnimaPanel only calls
+ * this when reading or editing an existing Anima. */
+async function deriveAgentKeypair(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  walletClient: any,
+  address: `0x${string}`,
+  ens: string,
+  knownVersion: number | undefined,
+): Promise<{ pubkey: string; secretKey: string }> {
+  if (typeof knownVersion === "number" && knownVersion > 0) {
+    // SDK helper returns { publicKey, secretKey }; rename the field
+    // for FE-internal consistency.
+    const kp = await generateKeyPairFromSignature(walletClient, knownVersion);
+    return { pubkey: kp.publicKey, secretKey: kp.secretKey };
+  }
+  return deriveAgentX25519PerEns(walletClient, address, ens);
+}
+
 export function AnimaPanel({ ens }: { ens: string }) {
   const { address, walletClient } = useWallet();
+  const knownAgents = useKnownAgents();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [ensOwnerAddr, setEnsOwnerAddr] = useState<`0x${string}` | null>(null);
   const [editing, setEditing] = useState(false);
@@ -53,6 +98,13 @@ export function AnimaPanel({ ens }: { ens: string }) {
   const [busy, setBusy] = useState<"decrypt" | "publish" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [decryptError, setDecryptError] = useState<string | null>(null);
+
+  // Look up the agent's registered key version (if it's a server-seeded
+  // agent we ship with). User-created agents won't be in known-agents.json
+  // and will fall through to the FE per-ENS derivation scheme below.
+  const knownVersion = Object.values(knownAgents).find(
+    (a) => a.ens === ens,
+  )?.x25519Version;
 
   // Resolve the on-chain ENS owner. Only this wallet can successfully
   // call setText on the resolver — gate the publish/edit affordances
@@ -118,7 +170,12 @@ export function AnimaPanel({ ens }: { ens: string }) {
     setBusy("decrypt");
     setDecryptError(null);
     try {
-      const keys = await deriveAgentX25519(walletClient, address, ens);
+      const keys = await deriveAgentKeypair(
+        walletClient,
+        address,
+        ens,
+        knownVersion,
+      );
       // Sanity: the derived pubkey must match the doc's pubkey.
       if (keys.pubkey !== state.peek.ownerPubkey) {
         throw new Error(
@@ -147,7 +204,12 @@ export function AnimaPanel({ ens }: { ens: string }) {
     try {
       // Re-derive the agent keypair so we encrypt to the same pubkey
       // every time. Same wallet+ens → same keys.
-      const keys = await deriveAgentX25519(walletClient, address, ens);
+      const keys = await deriveAgentKeypair(
+        walletClient,
+        address,
+        ens,
+        knownVersion,
+      );
       await publishAnima({
         ens,
         ownerAddr: address,

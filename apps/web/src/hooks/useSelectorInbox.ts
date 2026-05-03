@@ -7,29 +7,35 @@ import {
 } from "hermes-agents-sdk";
 import { publicClient, INBOX_CONTRACT } from "@/lib/chainConfig";
 import { downloadBlob } from "@/lib/browserStorage";
+import { decodeBody } from "@/lib/selectorEnvelopes";
 
-export type ConciergeMessage = {
-  text: string;
+export type SelectorResponse = {
+  requestId: string;
+  markdown: string;
+  expertEns: string;
+  reason: string;
+  from: string;
   ts: number;
   blockNumber: bigint;
   txHash: `0x${string}`;
   rootHash: `0x${string}`;
-  thread?: string;
-  history?: `0x${string}`;
 };
 
 const POLL_MS = 3000;
 
-/** Polls the user's own inbox for sealed DMs sent by the concierge,
- * decrypts each with the user's secret key, and surfaces them in
- * timestamp order. Pure on-chain read — no agents-server coordination. */
-export function useChatbotInbox(args: {
+/** Polls the user's own inbox for `final-response` DMs from the
+ * Selector. Decrypts with the user's secret key, decodes the inner
+ * SelectorBody, and surfaces the routed reply (with the expert's ENS +
+ * the routing reason). */
+export function useSelectorInbox(args: {
   userEns: string | null;
   userSecretKey: string | null;
-  conciergeEns: string;
+  selectorEns: string;
 }) {
-  const { userEns, userSecretKey, conciergeEns } = args;
-  const [messages, setMessages] = useState<ConciergeMessage[]>([]);
+  const { userEns, userSecretKey, selectorEns } = args;
+  const [responses, setResponses] = useState<Map<string, SelectorResponse>>(
+    new Map(),
+  );
   const [error, setError] = useState<string | null>(null);
 
   const cursor = useRef<bigint>(0n);
@@ -40,7 +46,7 @@ export function useChatbotInbox(args: {
     cursor.current = 0n;
     seen.current = new Set();
     senderPubkeyCache.current = new Map();
-    setMessages([]);
+    setResponses(new Map());
     setError(null);
 
     if (!userEns || !userSecretKey) return;
@@ -72,8 +78,8 @@ export function useChatbotInbox(args: {
           return;
         }
         if (env.to !== userEns || env.biome) return;
-        // Only surface concierge replies in this view.
-        if (env.from !== conciergeEns) return;
+        // Only surface DMs from the configured selector.
+        if (env.from !== selectorEns) return;
 
         const senderPub =
           env.ephemeralPubKey ?? (await getSenderPubkey(env.from));
@@ -89,24 +95,29 @@ export function useChatbotInbox(args: {
         } catch {
           return;
         }
-        const ev: ConciergeMessage = {
-          text: plaintext,
+
+        const body = decodeBody(plaintext);
+        if (!body || body.kind !== "final-response") return;
+
+        const ev: SelectorResponse = {
+          requestId: body.requestId,
+          markdown: body.markdown,
+          expertEns: body.expertEns,
+          reason: body.reason,
+          from: env.from,
           ts: env.ts * 1000,
           blockNumber: log.blockNumber,
           txHash: log.transactionHash,
           rootHash: log.rootHash,
-          thread: env.thread,
-          history: env.history,
         };
-        setMessages((prev) =>
-          [...prev, ev].sort(
-            (a, b) =>
-              a.ts - b.ts || Number(a.blockNumber - b.blockNumber),
-          ),
-        );
+        setResponses((prev) => {
+          const next = new Map(prev);
+          next.set(ev.requestId, ev);
+          return next;
+        });
       } catch (err) {
         console.warn(
-          `[useChatbotInbox] drop ${log.rootHash.slice(0, 10)}…:`,
+          `[useSelectorInbox] drop ${log.rootHash.slice(0, 10)}…:`,
           (err as Error).message,
         );
       }
@@ -137,7 +148,7 @@ export function useChatbotInbox(args: {
     return () => {
       stopped = true;
     };
-  }, [userEns, userSecretKey, conciergeEns]);
+  }, [userEns, userSecretKey, selectorEns]);
 
-  return { messages, error };
+  return { responses, error };
 }

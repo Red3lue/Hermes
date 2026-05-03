@@ -58,8 +58,11 @@ export type RuntimeOptions = {
   pollJitterMs?: number;
 };
 
-const DEFAULT_INTERVAL = 5_000;
-const DEFAULT_JITTER = 1_500;
+// Per-agent polling cadence. With `finalityRequired: false` on uploads,
+// 0G round-trips dropped from ~10–15s to ~2–4s, so a tighter base poll
+// + jitter is now in budget without hammering the Sepolia RPC.
+const DEFAULT_INTERVAL = 3_000;
+const DEFAULT_JITTER = 1_000;
 
 /**
  * Spawn a long-running polling loop for one agent. The agent's identity is
@@ -109,9 +112,14 @@ export async function spawnAgentRuntime(
     keystorePath: `${process.env.HERMES_RUNTIME_DIR ?? ".hermes-runtime"}/${agent.slug}.json`,
   });
 
-  // For demo: allow coordinator to initiate public conversations so it can
-  // dispatch DMs to quorum members even with no prior inbound thread.
-  if (agent.roles.includes("coordinator")) {
+  // For demo: roles that initiate outbound DMs to peers they may not have
+  // heard from yet need `canStartConversations: true`. Applies to the
+  // coordinator (fans deliberate DMs out to quorum members) and the
+  // selector (routes to experts it picks per request).
+  if (
+    agent.roles.includes("coordinator") ||
+    agent.roles.includes("selector")
+  ) {
     try {
       hermes.updatePolicy({ public: { canStartConversations: true } });
       console.log(

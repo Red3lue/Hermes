@@ -3,47 +3,83 @@
     "ens": "concierge.hermes.eth",
     "role": "chatbot",
     "displayName": "Concierge",
-    "tagline": "Confidential 1:1 assistant"
+    "tagline": "Confidential 1:1 assistant",
+    "x25519Version": 1
   },
   "architect": {
     "ens": "architect.hermes.eth",
     "role": "quorum",
     "displayName": "Architect",
-    "tagline": "Designs systems first; weighs structure and clean abstractions."
+    "tagline": "Designs systems first; weighs structure and clean abstractions.",
+    "x25519Version": 2
   },
   "auditor": {
     "ens": "auditor.hermes.eth",
     "role": "inactive",
-    "displayName": "Auditor"
+    "displayName": "Auditor",
+    "x25519Version": 3
   },
   "pragmatist": {
     "ens": "pragmatist.hermes.eth",
     "role": "quorum",
     "displayName": "Pragmatist",
-    "tagline": "Ship-it focus; argues for the smallest viable thing."
+    "tagline": "Ship-it focus; argues for the smallest viable thing.",
+    "x25519Version": 4
   },
   "skeptic": {
     "ens": "skeptic.hermes.eth",
     "role": "quorum",
     "displayName": "Skeptic",
-    "tagline": "Plays devil's advocate; surfaces hidden assumptions."
+    "tagline": "Plays devil's advocate; surfaces hidden assumptions.",
+    "x25519Version": 5
   },
   "futurist": {
     "ens": "futurist.hermes.eth",
     "role": "inactive",
-    "displayName": "Futurist"
+    "displayName": "Futurist",
+    "x25519Version": 6
   },
   "coordinator": {
     "ens": "coordinator.hermes.eth",
     "role": "coordinator",
     "displayName": "Coordinator",
-    "tagline": "Routes your sealed request, gathers verdicts, writes the synthesis."
+    "tagline": "Routes your sealed request, gathers verdicts, writes the synthesis.",
+    "x25519Version": 7
   },
   "reporter": {
     "ens": "reporter.hermes.eth",
     "role": "inactive",
     "displayName": "Reporter",
-    "tagline": "Synthesises member verdicts into the final report"
+    "tagline": "Synthesises member verdicts into the final report",
+    "x25519Version": 8
+  },
+  "selector": {
+    "ens": "selector.hermes.eth",
+    "role": "selector",
+    "displayName": "Selector",
+    "tagline": "Reads its Anima as a routing manifest; picks the right expert.",
+    "x25519Version": 9
+  },
+  "techExpert": {
+    "ens": "tech.experts.hermes.eth",
+    "role": "expert",
+    "displayName": "Tech Expert",
+    "tagline": "Bugs, APIs, integration, protocol, debugging.",
+    "x25519Version": 10
+  },
+  "legalExpert": {
+    "ens": "legal.experts.hermes.eth",
+    "role": "expert",
+    "displayName": "Legal Expert",
+    "tagline": "ToS, privacy, contracts, IP, regulation.",
+    "x25519Version": 11
+  },
+  "productExpert": {
+    "ens": "product.experts.hermes.eth",
+    "role": "expert",
+    "displayName": "Product Expert",
+    "tagline": "Features, UX, pricing, comparisons.",
+    "x25519Version": 12
   },
   "demoBiome": { "ens": "quorumv2.biomes.hermes.eth" }
 }
