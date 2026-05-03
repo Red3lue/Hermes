@@ -109,9 +109,14 @@ export async function spawnAgentRuntime(
     keystorePath: `${process.env.HERMES_RUNTIME_DIR ?? ".hermes-runtime"}/${agent.slug}.json`,
   });
 
-  // For demo: allow coordinator to initiate public conversations so it can
-  // dispatch DMs to quorum members even with no prior inbound thread.
-  if (agent.roles.includes("coordinator")) {
+  // For demo: roles that initiate outbound DMs to peers they may not have
+  // heard from yet need `canStartConversations: true`. Applies to the
+  // coordinator (fans deliberate DMs out to quorum members) and the
+  // selector (routes to experts it picks per request).
+  if (
+    agent.roles.includes("coordinator") ||
+    agent.roles.includes("selector")
+  ) {
     try {
       hermes.updatePolicy({ public: { canStartConversations: true } });
       console.log(
