@@ -3,23 +3,46 @@ import {
   ETHEREUM_BLUE_CHIP_TOKENS,
   resolveDeployments,
 } from "./dexRegistry.js";
+import { SEED_BLUE_CHIP_POOLS } from "./dexSeedPools.js";
 import { queryGraph } from "./graph.js";
 
 // Both queries are written once against the dex-amm standardized schema and run
 // unchanged on every deployment in the registry.
-const CANDIDATE_POOLS_QUERY = `
-  query CandidatePools($first: Int!) {
+
+// Slow on large subgraphs (10-20s, and it times out when indexers lag), so it
+// only runs in the background to refresh the pool universe.
+const DISCOVERY_QUERY = `
+  query DiscoverPools($first: Int!) {
+    liquidityPools(first: $first, orderBy: cumulativeVolumeUSD, orderDirection: desc) {
+      id
+      inputTokens {
+        id
+      }
+    }
+  }
+`;
+
+// Fast (<1s): everything a round needs, for a known set of pools.
+const ACTIVITY_QUERY = `
+  query PoolActivity($pools: [String!]!, $since: BigInt!) {
     dexAmmProtocols(first: 1) {
       schemaVersion
       totalValueLockedUSD
     }
-    liquidityPools(first: $first, orderBy: cumulativeVolumeUSD, orderDirection: desc) {
+    liquidityPools(first: 100, where: { id_in: $pools }) {
       id
       name
       totalValueLockedUSD
       inputTokens {
         id
       }
+    }
+    liquidityPoolDailySnapshots(first: 1000, where: { pool_in: $pools, timestamp_gte: $since }) {
+      pool {
+        id
+      }
+      dailyVolumeUSD
+      dailyTotalRevenueUSD
     }
     _meta {
       block {
@@ -30,42 +53,27 @@ const CANDIDATE_POOLS_QUERY = `
   }
 `;
 
-const POOL_SNAPSHOTS_QUERY = `
-  query PoolSnapshots($pools: [String!]!, $since: BigInt!) {
-    liquidityPoolDailySnapshots(first: 1000, where: { pool_in: $pools, timestamp_gte: $since }) {
-      pool {
-        id
-      }
-      dailyVolumeUSD
-      dailyTotalRevenueUSD
-    }
-  }
-`;
-
 const CANDIDATE_POOLS = 100;
 // 30 pools x 30 days stays under the 1000-row page limit of the snapshot query.
 const MAX_BLUE_CHIP_POOLS = 30;
 // Above any real DEX's TVL: a reported figure this large is spam-token pricing.
 const PLAUSIBLE_TVL_CEILING_USD = 50e9;
 const CACHE_TTL_MS = 60_000;
+const DISCOVERY_TTL_MS = 6 * 60 * 60 * 1000;
 
-type CandidatePoolsData = {
+type PoolRef = { id: string; inputTokens: { id: string }[] };
+
+type DiscoveryData = { liquidityPools: PoolRef[] };
+
+type ActivityData = {
   dexAmmProtocols: { schemaVersion: string; totalValueLockedUSD: string }[];
-  liquidityPools: {
-    id: string;
-    name: string | null;
-    totalValueLockedUSD: string;
-    inputTokens: { id: string }[];
-  }[];
-  _meta: { block: { number: number; timestamp: number | null } };
-};
-
-type PoolSnapshotsData = {
+  liquidityPools: (PoolRef & { name: string | null; totalValueLockedUSD: string })[];
   liquidityPoolDailySnapshots: {
     pool: { id: string };
     dailyVolumeUSD: string;
     dailyTotalRevenueUSD: string;
   }[];
+  _meta: { block: { number: number; timestamp: number | null } };
 };
 
 export type PoolActivity = {
@@ -83,6 +91,8 @@ export type DexActivity = {
   network: string;
   schemaVersion: string;
   days: number;
+  /** Where the pool universe came from: live discovery or the checked-in seed list. */
+  poolSource: "discovered" | "seed";
   /** Metrics from pools whose every token is on the blue-chip allowlist. */
   blueChip: {
     pools: number;
@@ -113,31 +123,76 @@ const round = (value: number) => Math.round(value);
 const two = (value: number) => Math.round(value * 100) / 100;
 const share = (part: number, total: number) => (total > 0 ? two((part / total) * 100) : 0);
 
+const isBlueChip = (pool: PoolRef) =>
+  pool.inputTokens.every((t) => t.id in ETHEREUM_BLUE_CHIP_TOKENS);
+
+const discovered = new Map<string, { ids: string[]; at: number }>();
+const discovering = new Map<string, Promise<void>>();
+
+function refreshDiscovery(deployment: DexDeployment): Promise<void> {
+  const running = discovering.get(deployment.key);
+  if (running) {
+    return running;
+  }
+  const job = queryGraph<DiscoveryData>(deployment.subgraphId, DISCOVERY_QUERY, {
+    first: CANDIDATE_POOLS,
+  })
+    .then((data) => {
+      const ids = data.liquidityPools
+        .filter(isBlueChip)
+        .slice(0, MAX_BLUE_CHIP_POOLS)
+        .map((p) => p.id);
+      if (ids.length > 0) {
+        discovered.set(deployment.key, { ids, at: Date.now() });
+      }
+    })
+    .catch((err) => {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[dex] pool discovery failed for ${deployment.key}: ${message}`);
+    })
+    .finally(() => discovering.delete(deployment.key));
+  discovering.set(deployment.key, job);
+  return job;
+}
+
+/**
+ * The blue-chip pools to measure. Never waits on the slow discovery query when
+ * a previous discovery or the seed list can answer; stale entries refresh in
+ * the background.
+ */
+async function poolUniverse(
+  deployment: DexDeployment,
+): Promise<{ ids: string[]; source: DexActivity["poolSource"] }> {
+  const hit = discovered.get(deployment.key);
+  const seed = SEED_BLUE_CHIP_POOLS[deployment.key] ?? [];
+  if (!hit || Date.now() - hit.at > DISCOVERY_TTL_MS) {
+    const job = refreshDiscovery(deployment);
+    if (!hit && seed.length === 0) {
+      await job;
+    }
+  }
+  const current = discovered.get(deployment.key);
+  return current ? { ids: current.ids, source: "discovered" } : { ids: [...seed], source: "seed" };
+}
+
 async function fetchActivity(deployment: DexDeployment, days: number): Promise<DexActivity> {
-  const candidates = await queryGraph<CandidatePoolsData>(
-    deployment.subgraphId,
-    CANDIDATE_POOLS_QUERY,
-    { first: CANDIDATE_POOLS },
-  );
-  const protocol = candidates.dexAmmProtocols[0];
+  const universe = await poolUniverse(deployment);
+  if (universe.ids.length === 0) {
+    throw new Error("no blue-chip pools known for this deployment");
+  }
+
+  const since = String(Math.floor(Date.now() / 1000) - days * 86_400);
+  const data = await queryGraph<ActivityData>(deployment.subgraphId, ACTIVITY_QUERY, {
+    pools: universe.ids,
+    since,
+  });
+  const protocol = data.dexAmmProtocols[0];
   if (!protocol) {
     throw new Error("subgraph returned no dexAmmProtocol entity");
   }
 
-  const pools = candidates.liquidityPools
-    .filter((p) => p.inputTokens.every((t) => t.id in ETHEREUM_BLUE_CHIP_TOKENS))
-    .slice(0, MAX_BLUE_CHIP_POOLS);
-
-  const since = String(Math.floor(Date.now() / 1000) - days * 86_400);
-  const snapshots =
-    pools.length === 0
-      ? []
-      : (
-          await queryGraph<PoolSnapshotsData>(deployment.subgraphId, POOL_SNAPSHOTS_QUERY, {
-            pools: pools.map((p) => p.id),
-            since,
-          })
-        ).liquidityPoolDailySnapshots;
+  const pools = data.liquidityPools.filter(isBlueChip);
+  const snapshots = data.liquidityPoolDailySnapshots;
 
   const window = new Map<string, { volume: number; revenue: number }>();
   for (const s of snapshots) {
@@ -162,7 +217,7 @@ async function fetchActivity(deployment: DexDeployment, days: number): Promise<D
   const volumeUSD = topPools.reduce((sum, p) => sum + p.volumeUSD, 0);
   const revenueUSD = topPools.reduce((sum, p) => sum + p.revenueUSD, 0);
   const reportedTvl = Number(protocol.totalValueLockedUSD);
-  const blockTime = candidates._meta.block.timestamp;
+  const blockTime = data._meta.block.timestamp;
 
   return {
     deployment: deployment.key,
@@ -170,6 +225,7 @@ async function fetchActivity(deployment: DexDeployment, days: number): Promise<D
     network: deployment.network,
     schemaVersion: protocol.schemaVersion,
     days,
+    poolSource: universe.source,
     blueChip: {
       pools: topPools.length,
       tvlUSD,
@@ -184,13 +240,12 @@ async function fetchActivity(deployment: DexDeployment, days: number): Promise<D
       plausible: reportedTvl < PLAUSIBLE_TVL_CEILING_USD,
     },
     topPools,
-    indexedBlock: candidates._meta.block.number,
+    indexedBlock: data._meta.block.number,
     indexedAt: blockTime ? new Date(blockTime * 1000).toISOString() : null,
   };
 }
 
-// The candidate-pools query takes up to ~20s on large subgraphs; the MCP tools
-// and the quorum often ask for the same data back to back.
+// The MCP tools and the quorum often ask for the same data back to back.
 const cache = new Map<string, { expires: number; value: Promise<DexActivity> }>();
 
 function getActivity(deployment: DexDeployment, days: number): Promise<DexActivity> {
@@ -236,7 +291,7 @@ export async function compareDexProtocols(
   return {
     generatedAt: new Date().toISOString(),
     days,
-    method: `Per protocol: top ${CANDIDATE_POOLS} pools by cumulative volume, keeping those whose every token is on the blue-chip allowlist (max ${MAX_BLUE_CHIP_POOLS}); window metrics summed from their daily snapshots.`,
+    method: `Per protocol: pools whose every token is on the blue-chip allowlist (max ${MAX_BLUE_CHIP_POOLS}), discovered from the top ${CANDIDATE_POOLS} pools by cumulative volume and refreshed in the background, with a checked-in seed list as fallback. TVL is read live from each pool; window volume and revenue are summed from live daily snapshots.`,
     protocols: activity
       .map((a) => ({
         ...a,
