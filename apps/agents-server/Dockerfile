@@ -28,6 +28,7 @@ WORKDIR /repo
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
 COPY packages/sdk/package.json        ./packages/sdk/
 COPY packages/cli/package.json        ./packages/cli/
+COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY apps/agents-server/package.json  ./apps/agents-server/
 COPY apps/web/package.json            ./apps/web/
 
@@ -39,11 +40,14 @@ RUN pnpm install --frozen-lockfile
 # but pull in apps/web/agents/ — those agent.json + persona.md + anima.md
 # files are read at runtime by the agents-server.
 COPY packages/sdk/         ./packages/sdk/
+COPY packages/mcp-server/  ./packages/mcp-server/
 COPY apps/agents-server/   ./apps/agents-server/
 COPY apps/web/agents/      ./apps/web/agents/
 
-# Build SDK first (server depends on its dist/), then the server itself.
+# Build the SDK and the MCP server first (the server imports both dist/s),
+# then the server itself.
 RUN pnpm --filter hermes-agents-sdk build \
+ && pnpm --filter @hermes/mcp-server build \
  && pnpm --filter @hermes/agents-server build
 
 # `pnpm deploy` produces a flat, production-pruned directory tree with

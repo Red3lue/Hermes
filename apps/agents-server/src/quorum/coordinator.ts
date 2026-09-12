@@ -1,13 +1,43 @@
+import {
+  buildDexGrounding,
+  type DexGrounding,
+  isDexQuestion,
+} from "@hermes/mcp-server/grounding";
 import { callLLM } from "../llm.js";
 import type { AgentDef } from "../registry.js";
 import type { RoleHandler, RuntimeContext } from "../runtime/agentRuntime.js";
 import { decodeBody, encodeBody, type QuorumBody } from "./envelopes.js";
 
 const ROUND_TIMEOUT_MS = 90_000;
+// A slow Graph gateway must not stall the round; members deliberate without
+// the data instead.
+const GROUNDING_TIMEOUT_MS = 20_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`timed out after ${ms / 1000}s`)),
+      ms,
+    );
+    timer.unref();
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 type RoundState = {
   contextId: string; // === requestId
   contextMarkdown: string;
+  // Live Graph data fetched for DEX/DeFi questions; every member sees the same numbers.
+  grounding: DexGrounding | null;
   requesterEns: string;
   startedAt: number;
   members: AgentDef[];
@@ -78,9 +108,14 @@ export function makeCoordinatorHandler(
 
     const userPrompt = [
       `## Original question\n${state.contextMarkdown}`,
+      ...(state.grounding
+        ? [`## Live on-chain data the members were given\n${state.grounding.markdown}`]
+        : []),
       `## Member responses\n${memberBlock || "(no responses received)"}`,
       `## Tally\nagree: ${tally.agree}, disagree: ${tally.disagree}, abstain: ${tally.abstain}`,
-      "Now produce the final synthesis report following your persona.",
+      state.grounding
+        ? "Now produce the final synthesis report following your persona. Where members relied on the live data, keep their figures exact."
+        : "Now produce the final synthesis report following your persona.",
     ].join("\n\n");
 
     let markdown: string;
@@ -100,6 +135,11 @@ export function makeCoordinatorHandler(
       markdown =
         `# Quorum result\n\nThe quorum returned **${tally.agree} agree / ${tally.disagree} disagree / ${tally.abstain} abstain** ` +
         `on:\n\n> ${state.contextMarkdown}\n\n(Synthesis LLM unavailable; raw verdicts:)\n\n${memberBlock}`;
+    }
+
+    // Source attribution is appended deterministically, not left to the LLM.
+    if (state.grounding) {
+      markdown += `\n\n---\n${state.grounding.footer}`;
     }
 
     if (state.finalSent) return;
@@ -136,6 +176,7 @@ export function makeCoordinatorHandler(
     const state: RoundState = {
       contextId: requestId,
       contextMarkdown: markdown,
+      grounding: null,
       requesterEns,
       startedAt: Date.now(),
       members: opts.members,
@@ -148,6 +189,25 @@ export function makeCoordinatorHandler(
       `[coordinator] new round ${requestId.slice(0, 8)} from ${requesterEns}`,
     );
 
+    // Ground DEX/DeFi questions in live Graph data before fan-out, so every
+    // member deliberates over the same fetched numbers.
+    if (isDexQuestion(markdown)) {
+      try {
+        state.grounding = await withTimeout(
+          buildDexGrounding(),
+          GROUNDING_TIMEOUT_MS,
+        );
+        console.log(
+          `[coordinator] ${requestId.slice(0, 8)} grounded in The Graph data (${state.grounding.sources.length} subgraphs)`,
+        );
+      } catch (err) {
+        console.warn(
+          `[coordinator] Graph grounding failed, deliberating without it:`,
+          (err as Error).message,
+        );
+      }
+    }
+
     // Stage broadcast on the biome (member-visible only).
     const startedBody: QuorumBody = {
       kind: "stage",
@@ -156,6 +216,7 @@ export function makeCoordinatorHandler(
       meta: {
         requesterEns,
         members: opts.members.map((m) => m.ens),
+        grounding: state.grounding?.sources ?? null,
       },
     };
     await ctx.broadcast(opts.biomeName, encodeBody(startedBody));
@@ -166,7 +227,9 @@ export function makeCoordinatorHandler(
       const delibBody: QuorumBody = {
         kind: "deliberate",
         contextId: requestId,
-        contextMarkdown: markdown,
+        contextMarkdown: state.grounding
+          ? `${markdown}\n\n${state.grounding.markdown}`
+          : markdown,
       };
       try {
         await ctx.sendDM(member.ens, encodeBody(delibBody));

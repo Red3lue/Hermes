@@ -39,6 +39,7 @@ export function makeMemberHandler(
         "Respond with ONE concise paragraph (≤120 words).",
         "End with exactly: `VERDICT: <agree|disagree|abstain> — <one-line reason>`",
         "No markdown formatting, no headers.",
+        "If the context contains a 'Live on-chain data' section, base your reasoning on those figures and cite at least one of them; never invent numbers that are not in it.",
       ];
       if (souls.anima) {
         extraSystemParts.push(
