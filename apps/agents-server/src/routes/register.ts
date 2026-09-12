@@ -2,7 +2,6 @@ import { Router, type Router as ExpressRouter } from "express";
 import {
   createPublicClient,
   createWalletClient,
-  http,
   namehash,
   type Address,
 } from "viem";
@@ -10,6 +9,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { addEnsContracts } from "@ensdomains/ensjs";
 import { createSubname } from "@ensdomains/ensjs/wallet";
+import { sepoliaTransport } from "../rpc.js";
 
 export const registerRouter: ExpressRouter = Router();
 
@@ -43,12 +43,12 @@ function ensChainAndClients() {
   }
   const publicClient = createPublicClient({
     chain: ensChain,
-    transport: http(rpcUrl),
+    transport: sepoliaTransport(),
   });
   const wallet = createWalletClient({
     account: privateKeyToAccount(deployerKey),
     chain: ensChain,
-    transport: http(rpcUrl),
+    transport: sepoliaTransport(),
   });
   return { publicClient, wallet };
 }

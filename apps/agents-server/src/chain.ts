@@ -1,7 +1,6 @@
 import {
   createPublicClient,
   createWalletClient,
-  http,
   type PublicClient,
   type WalletClient,
   type Account,
@@ -10,6 +9,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { addEnsContracts } from "@ensdomains/ensjs";
 import { Hermes, type HermesConfig } from "hermes-agents-sdk";
+import { sepoliaTransport } from "./rpc.js";
 
 const ensChain = addEnsContracts(sepolia);
 
@@ -23,7 +23,7 @@ export function getPublicClient(): PublicClient {
   if (!_publicClient) {
     _publicClient = createPublicClient({
       chain: ensChain,
-      transport: http(process.env.SEPOLIA_RPC_URL),
+      transport: sepoliaTransport(),
     });
   }
   return _publicClient;
@@ -36,7 +36,7 @@ export function makeWalletClient(
   return createWalletClient({
     account,
     chain: ensChain,
-    transport: http(process.env.SEPOLIA_RPC_URL),
+    transport: sepoliaTransport(),
   }) as WalletClient & { account: Account };
 }
 

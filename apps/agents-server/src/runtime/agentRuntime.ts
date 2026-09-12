@@ -77,7 +77,10 @@ export async function spawnAgentRuntime(
   handler: RoleHandler,
   opts: RuntimeOptions = {},
 ): Promise<() => void> {
-  const interval = opts.pollIntervalMs ?? DEFAULT_INTERVAL;
+  // AGENT_POLL_INTERVAL_MS lowers RPC load when the Sepolia endpoint rate-limits.
+  const interval =
+    opts.pollIntervalMs ??
+    (Number(process.env.AGENT_POLL_INTERVAL_MS) || DEFAULT_INTERVAL);
   const jitter = opts.pollJitterMs ?? DEFAULT_JITTER;
 
   await ensureAgentKeystore(agent);
