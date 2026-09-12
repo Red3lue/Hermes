@@ -4,9 +4,15 @@
   "private": true,
   "description": "MCP server that gives AI clients live, standardized Graph data and a Hermes agent quorum to reason over it.",
   "type": "module",
-  "bin": {
-    "hermes-mcp": "./dist/index.js"
+  "exports": {
+    "./grounding": {
+      "types": "./dist/grounding.d.ts",
+      "import": "./dist/grounding.js"
+    }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
