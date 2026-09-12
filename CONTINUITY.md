@@ -27,9 +27,13 @@ Planned new features (updated as they ship):
 
 - [ ] ENSv2 (Sepolia) migration of agent subnames: hierarchical registry + permissioned resolver
       holding X25519 keys and Anima pointers — agents as ENSv2 namespaces
-- [ ] The Graph: Hermes MCP server + SKILL.md consuming **live** subgraph / Token API data;
-      quorum agents ground their answers in that data
-- [ ] Hedera: coordinator pays quorum agents per answer via x402 (Blocky402 facilitator),
-      HCS audit trail per vote
+- [x] The Graph: new `packages/mcp-server`, an MCP server + `SKILL.md` serving **live** DEX
+      data from Messari standardized subgraphs (Uniswap v3, Curve, SushiSwap), filtered to
+      blue-chip pools because spam-token pricing inflates the subgraphs' own TVL. The quorum
+      coordinator grounds DeFi questions in that data before fan-out, members cite it, and the
+      final report carries the subgraphs and indexed blocks it used
+      (`apps/agents-server/src/quorum/coordinator.ts`, `member.ts`)
+
+Dropped during the event (not started): Hedera x402 agent payments, for lack of time.
 
 All new code is open source under the repository licence.
