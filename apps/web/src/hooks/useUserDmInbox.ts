@@ -20,7 +20,10 @@ export type UserResponse = {
   rootHash: `0x${string}`;
 };
 
-const POLL_MS = 3000;
+// 6s keeps the demo responsive without the tab tripping public RPC rate limits.
+const POLL_MS = 6000;
+// The first scan covers ~17h of blocks instead of the SDK's 200k-block default lookback.
+const RECENT_BLOCKS = 5_000n;
 
 /**
  * Polls the user's own inbox node on HermesInbox (Sepolia), downloads each
@@ -125,6 +128,10 @@ export function useUserDmInbox(args: {
     async function tick() {
       if (stopped) return;
       try {
+        const head = await publicClient.getBlockNumber();
+        if (cursor.current === 0n) {
+          cursor.current = head > RECENT_BLOCKS ? head - RECENT_BLOCKS : 1n;
+        }
         const logs = await readInbox(
           { contract: INBOX_CONTRACT, publicClient },
           userEns!,
@@ -133,9 +140,10 @@ export function useUserDmInbox(args: {
         for (const log of logs) {
           if (seen.current.has(log.rootHash)) continue;
           seen.current.add(log.rootHash);
-          if (log.blockNumber > cursor.current) cursor.current = log.blockNumber;
           await processLog(log);
         }
+        // Advance past empty ranges too; `seen` dedupes logs at the boundary block.
+        if (head > cursor.current) cursor.current = head;
       } catch (err) {
         if (!stopped) setError((err as Error).message);
       }

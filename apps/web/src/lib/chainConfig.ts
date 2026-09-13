@@ -1,4 +1,4 @@
-import { createPublicClient, http } from "viem";
+import { createPublicClient, fallback, http } from "viem";
 import { sepolia } from "viem/chains";
 
 export const INBOX_CONTRACT = (import.meta.env.VITE_INBOX_CONTRACT ??
@@ -15,5 +15,6 @@ export const SEPOLIA_RPC =
 
 export const publicClient = createPublicClient({
   chain: sepolia,
-  transport: http(SEPOLIA_RPC),
+  // A second public endpoint absorbs per-IP rate limits on the first.
+  transport: fallback([http(SEPOLIA_RPC), http("https://sepolia.gateway.tenderly.co")]),
 });
