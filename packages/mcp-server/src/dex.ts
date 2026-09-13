@@ -59,6 +59,10 @@ const MAX_BLUE_CHIP_POOLS = 30;
 // Above any real DEX's TVL: a reported figure this large is spam-token pricing.
 const PLAUSIBLE_TVL_CEILING_USD = 50e9;
 const CACHE_TTL_MS = 60_000;
+// One slow protocol must not hold back the others.
+const DEPLOYMENT_DEADLINE_MS = 12_000;
+// How old a last-good result may be when a live fetch is slow or failing.
+const STALE_MAX_AGE_MS = 30 * 60 * 1000;
 const DISCOVERY_TTL_MS = 6 * 60 * 60 * 1000;
 
 type PoolRef = { id: string; inputTokens: { id: string }[] };
@@ -91,6 +95,10 @@ export type DexActivity = {
   network: string;
   schemaVersion: string;
   days: number;
+  /** When this data was fetched from The Graph. */
+  fetchedAt: string;
+  /** True when the live fetch was slow or failed and the last good result was used. */
+  stale: boolean;
   /** Where the pool universe came from: live discovery or the checked-in seed list. */
   poolSource: "discovered" | "seed";
   /** Metrics from pools whose every token is on the blue-chip allowlist. */
@@ -225,6 +233,8 @@ async function fetchActivity(deployment: DexDeployment, days: number): Promise<D
     network: deployment.network,
     schemaVersion: protocol.schemaVersion,
     days,
+    fetchedAt: new Date().toISOString(),
+    stale: false,
     poolSource: universe.source,
     blueChip: {
       pools: topPools.length,
@@ -247,6 +257,7 @@ async function fetchActivity(deployment: DexDeployment, days: number): Promise<D
 
 // The MCP tools and the quorum often ask for the same data back to back.
 const cache = new Map<string, { expires: number; value: Promise<DexActivity> }>();
+const lastGood = new Map<string, DexActivity>();
 
 function getActivity(deployment: DexDeployment, days: number): Promise<DexActivity> {
   const key = `${deployment.key}:${days}`;
@@ -256,8 +267,45 @@ function getActivity(deployment: DexDeployment, days: number): Promise<DexActivi
   }
   const value = fetchActivity(deployment, days);
   cache.set(key, { expires: Date.now() + CACHE_TTL_MS, value });
-  value.catch(() => cache.delete(key));
+  value.then(
+    (activity) => lastGood.set(key, activity),
+    () => cache.delete(key),
+  );
   return value;
+}
+
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`timed out after ${ms / 1000}s`)), ms);
+    timer.unref?.();
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+/**
+ * Live activity within a deadline; if the live fetch is slow or fails, the last good
+ * result (at most 30 minutes old) marked `stale`. A slow fetch keeps running and
+ * refreshes the last good result when it lands.
+ */
+async function freshOrLastGood(deployment: DexDeployment, days: number): Promise<DexActivity> {
+  try {
+    return await withDeadline(getActivity(deployment, days), DEPLOYMENT_DEADLINE_MS);
+  } catch (err) {
+    const previous = lastGood.get(`${deployment.key}:${days}`);
+    if (previous && Date.now() - Date.parse(previous.fetchedAt) <= STALE_MAX_AGE_MS) {
+      return { ...previous, stale: true };
+    }
+    throw err;
+  }
 }
 
 /**
@@ -270,7 +318,7 @@ export async function compareDexProtocols(
   days: number,
 ): Promise<DexComparison> {
   const deployments = resolveDeployments(keys);
-  const settled = await Promise.allSettled(deployments.map((d) => getActivity(d, days)));
+  const settled = await Promise.allSettled(deployments.map((d) => freshOrLastGood(d, days)));
 
   const activity: DexActivity[] = [];
   const failures: DexComparison["failures"] = [];
@@ -305,6 +353,6 @@ export async function compareDexProtocols(
 
 export async function topPools(key: string, days: number, first: number): Promise<PoolActivity[]> {
   const [deployment] = resolveDeployments([key]);
-  const activity = await getActivity(deployment, days);
+  const activity = await freshOrLastGood(deployment, days);
   return activity.topPools.slice(0, first);
 }

@@ -41,7 +41,7 @@ export async function buildDexGrounding(days = 7): Promise<DexGrounding> {
   const rows = comparison.protocols.map((p) => {
     const top = p.topPools[0];
     const topPool = top ? `${top.tokens.join("/")} ${usd(top.volumeUSD)}` : "none";
-    return `| ${p.protocol} | ${usd(p.blueChip.tvlUSD)} | ${usd(p.blueChip.volumeUSD)} | ${p.volumeSharePct}% | ${p.blueChip.volumeToTvl} | ${p.blueChip.takeRateBps} bps | ${topPool} | ${p.indexedBlock} |`;
+    return `| ${p.protocol}${p.stale ? " (cached)" : ""} | ${usd(p.blueChip.tvlUSD)} | ${usd(p.blueChip.volumeUSD)} | ${p.volumeSharePct}% | ${p.blueChip.volumeToTvl} | ${p.blueChip.takeRateBps} bps | ${topPool} | ${p.indexedBlock} |`;
   });
 
   const lines = [
@@ -61,6 +61,13 @@ export async function buildDexGrounding(days = 7): Promise<DexGrounding> {
       `Data quality: the subgraphs' own reported TVL is inflated by spam-token pricing for ${list.join(", ")}, so it is excluded above.`,
     );
   }
+  const cached = comparison.protocols.filter((p) => p.stale);
+  if (cached.length > 0) {
+    lines.push(
+      "",
+      `Rows marked (cached) come from the last successful fetch (${cached.map((p) => `${p.protocol} at ${p.fetchedAt}`).join(", ")}) because the live query was slow; the indexed block shows their age.`,
+    );
+  }
   if (comparison.failures.length > 0) {
     lines.push(
       "",
@@ -76,4 +83,20 @@ export async function buildDexGrounding(days = 7): Promise<DexGrounding> {
   const footer = `_Data: The Graph Network · Messari standardized subgraphs (${sources.map((s) => `${s.deployment} @ block ${s.indexedBlock}`).join(", ")}) · fetched ${comparison.generatedAt}_`;
 
   return { markdown: lines.join("\n"), footer, sources };
+}
+
+/**
+ * Refreshes the DEX data in the background so a quorum round finds a recent
+ * last-good result even when The Graph gateway is slow at that moment.
+ * Returns a function that stops the refresh.
+ */
+export function startDexWarmer(days = 7, intervalMs = 3 * 60_000): () => void {
+  const refresh = () =>
+    compareDexProtocols([], days).catch((err) => {
+      console.error(`[dex] warm refresh failed: ${err instanceof Error ? err.message : err}`);
+    });
+  void refresh();
+  const timer = setInterval(refresh, intervalMs);
+  timer.unref?.();
+  return () => clearInterval(timer);
 }

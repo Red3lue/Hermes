@@ -3,6 +3,7 @@ import {
   getCoordinator,
   getQuorumAgents,
 } from "../registry.js";
+import { startDexWarmer } from "@hermes/mcp-server/grounding";
 import { spawnAgentRuntime } from "../runtime/agentRuntime.js";
 import { ensureBiomeAnimus } from "../runtime/soulsPrep.js";
 import { makeCoordinatorHandler } from "./coordinator.js";
@@ -32,6 +33,11 @@ export async function bootQuorum(biomeName: string): Promise<() => void> {
   console.log(
     `[quorum] booting: coordinator=${coordinator.slug}, members=[${members.map((m) => m.slug).join(", ")}], biome=${biomeName}`,
   );
+
+  // Keep last-good Graph data warm so rounds never wait on a slow gateway.
+  if (process.env.GRAPH_API_KEY) {
+    startDexWarmer();
+  }
 
   // Auto-publish biome Animus from agents/_quorum/animus.md if not yet set
   // and the file exists. Coordinator is the biome owner (deployer-controlled).
