@@ -8,7 +8,22 @@
 📜 **HermesInbox on Sepolia:** [`0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8`](https://sepolia.etherscan.io/address/0x1cCD7DDb0c5F42BDB22D8893aDC5E7EA68D9CDD8)
 🪪 **Source:** https://github.com/Red3lue/Hermes
 
-Built solo for [ETHGlobal Open Agents](https://ethglobal.com/events/openagents).
+Built solo for [ETHGlobal Open Agents](https://ethglobal.com/events/openagents) (April–May 2026), and extended at **ETHOnline 2026** on the Continuity track.
+
+---
+
+## What's new at ETHOnline 2026
+
+Everything in this section was built during ETHOnline 2026 (Sep 4–13) on branch `ethonline-2026`. The judged diff is `git diff v1-baseline...ethonline-2026`. **The rest of this README describes Hermes as it already existed from ETHGlobal Open Agents.** See [CONTINUITY.md](./CONTINUITY.md) for the exact split, and [AI_USAGE.md](./AI_USAGE.md) for how AI tools were used.
+
+### Agents that reason over live on-chain data (The Graph)
+
+- **`hermes-graph` MCP server** (`packages/mcp-server`). Gives any MCP client (Claude Desktop, Claude Code, Cursor) live DEX data from The Graph, using one query pattern across Messari's standardized `dex-amm` subgraphs for Uniswap v3, Curve and SushiSwap. Setup and tools: [SKILL.md](./packages/mcp-server/SKILL.md).
+- **Numbers you can trust.** The subgraphs' own TVL is inflated by spam-token pricing (Uniswap v3 reported about $1e43). Hermes counts only blue-chip pools, matched by token address, and reports volume, TVL, market share, capital efficiency and take rate, together with the Ethereum block the data reflects.
+- **A grounded quorum.** When a user asks the quorum a DeFi question, the coordinator fetches that data before fan-out. Every member deliberates over the same table and is instructed to cite it, and the final report ends with the subgraphs and blocks it used (`apps/agents-server/src/quorum/coordinator.ts`).
+- **Production hardening.** Pool discovery runs in the background with a checked-in fallback list, so quorum rounds start in seconds. The agents' Sepolia RPC accepts a fallback list, so provider rate limits don't stall inbox polling (`apps/agents-server/src/rpc.ts`).
+
+**Try it:** ask the [live quorum](https://hermes-web-734709088945.us-central1.run.app) *"Should our DAO route treasury swaps through Uniswap v3 or Curve given current liquidity?"*, or run `GRAPH_API_KEY=<key> pnpm --filter @hermes/mcp-server smoke`.
 
 ---
 

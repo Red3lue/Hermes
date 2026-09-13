@@ -23,17 +23,21 @@ Repository: https://github.com/Red3lue/Hermes — the original Hermes repo (not 
 All hackathon work lands on branch `ethonline-2026` as regular commits on top of `v1-baseline`.
 Diff of the judged work: `git diff v1-baseline...ethonline-2026`.
 
-Planned new features (updated as they ship):
+Shipped:
 
-- [ ] ENSv2 (Sepolia) migration of agent subnames: hierarchical registry + permissioned resolver
-      holding X25519 keys and Anima pointers — agents as ENSv2 namespaces
 - [x] The Graph: new `packages/mcp-server`, an MCP server + `SKILL.md` serving **live** DEX
       data from Messari standardized subgraphs (Uniswap v3, Curve, SushiSwap), filtered to
       blue-chip pools because spam-token pricing inflates the subgraphs' own TVL. The quorum
-      coordinator grounds DeFi questions in that data before fan-out, members cite it, and the
+      coordinator grounds DeFi questions in that data before fan-out, members are instructed to cite it, and the
       final report carries the subgraphs and indexed blocks it used
       (`apps/agents-server/src/quorum/coordinator.ts`, `member.ts`)
+- [x] Production hardening found while deploying: pool discovery refreshes in the background with
+      a checked-in fallback list, and the agents' Sepolia RPC accepts a fallback list so provider
+      rate limits don't stall inbox polling (`apps/agents-server/src/rpc.ts`)
 
-Dropped during the event (not started): Hedera x402 agent payments, for lack of time.
+Dropped during the event (not started), for lack of time: Hedera x402 agent payments, and the
+ENSv2 (Sepolia) migration of agent subnames.
+
+How AI tools were used for this work: see [AI_USAGE.md](./AI_USAGE.md).
 
 All new code is open source under the repository licence.
